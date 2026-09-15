@@ -1,0 +1,14 @@
+{
+  "name": "ブログ作成補助",
+  "short_name": "ブログ作成補助",
+  "description": "スマホで使えるブログ作成補助ツール",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5ee",
+  "theme_color": "#477967",
+  "icons": [
+    {"src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

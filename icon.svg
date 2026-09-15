@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ブログ作成補助">
+  <rect width="512" height="512" rx="112" fill="#477967"/>
+  <path d="M143 112h179c26 0 47 21 47 47v194c0 26-21 47-47 47H190l-47 47v-288c0-26 21-47 47-47Z" fill="#fffefb"/>
+  <path d="M207 211h105M207 256h105M207 301h72" fill="none" stroke="#477967" stroke-linecap="round" stroke-width="24"/>
+  <circle cx="173" cy="211" r="12" fill="#b8d3cd"/><circle cx="173" cy="256" r="12" fill="#b8d3cd"/><circle cx="173" cy="301" r="12" fill="#b8d3cd"/>
+</svg>

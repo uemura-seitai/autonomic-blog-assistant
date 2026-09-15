@@ -1,0 +1,40 @@
+:root { --ink:#294139; --green:#477967; --line:#d9e4d8; --paper:#fffefb; --muted:#66766c; }
+* { box-sizing:border-box; }
+html, body { width:100%; max-width:100%; overflow-x:hidden; }
+body { margin:0; color:var(--ink); background:#f7f5ee; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif; line-height:1.6; }
+.topbar, main, footer { width:100%; max-width:760px; margin-left:auto; margin-right:auto; }
+.topbar { padding:14px 14px 4px; }
+.topbar p { margin:0; color:#496b5d; font-size:.82rem; font-weight:700; letter-spacing:.04em; }
+.topbar h1 { margin:3px 0 0; font-size:1.35rem; line-height:1.35; }
+main { padding:8px 12px 28px; }
+.card { width:100%; margin:12px 0; padding:14px; background:var(--paper); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 5px #405a4810; }
+h2 { margin:0 0 10px; font-size:1.18rem; } h3 { margin:0; font-size:1.08rem; }
+label { display:block; margin:14px 0 0; font-size:.94rem; font-weight:700; }
+input, textarea, button { width:100%; max-width:100%; }
+input, textarea { display:block; margin-top:6px; padding:12px; color:var(--ink); font:inherit; font-size:16px; font-weight:400; line-height:1.7; background:#fff; border:1px solid #b8d3cd; border-radius:10px; }
+input { min-height:48px; }
+textarea { min-height:220px; resize:vertical; overflow-wrap:anywhere; }
+.prompt-textarea { min-height:280px; background:#f7fbf9; }
+.answer-textarea { min-height:240px; }
+#step3-answer, #finalHtml { min-height:340px; }
+#finalHtml { background:#f4f8f7; }
+button { min-height:50px; margin-top:10px; padding:11px 14px; border:0; border-radius:10px; font:inherit; font-weight:700; font-size:16px; cursor:pointer; touch-action:manipulation; }
+button:active { transform:scale(.99); } button:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible { outline:3px solid #9dcabd; outline-offset:2px; }
+.primary { color:#fff; background:var(--green); } .copy-button { color:#245f50; background:#dcefe9; } .secondary { color:var(--green); background:#fff; border:1px solid var(--green); } .danger { color:#99433f; background:#fff1ef; border:1px solid #efc6c0; }
+.step { width:100%; margin-top:12px; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--paper); scroll-margin-top:10px; }
+.step summary { position:relative; padding:14px 42px 14px 14px; cursor:pointer; list-style:none; } .step summary::-webkit-details-marker { display:none; } .step summary::after { content:'＋'; position:absolute; top:12px; right:14px; color:var(--green); font-size:1.35rem; } .step[open] summary::after { content:'−'; }
+.step-title { display:block; font-size:1.08rem; line-height:1.4; }
+.step-number { display:block; margin-bottom:2px; color:var(--green); font-size:.78rem; font-weight:800; }
+.step-status { display:block; margin-top:4px; color:var(--muted); font-size:.8rem; font-weight:700; }
+.step-status.is-done { color:#247259; }
+.step-body { padding:0 14px 16px; border-top:1px solid var(--line); }
+.settings { margin-top:14px; border-top:1px solid var(--line); } .settings summary { padding:13px 0 2px; color:var(--green); cursor:pointer; font-size:.92rem; font-weight:700; } .settings-body { padding-bottom:2px; }
+.hint { margin:10px 0 0; color:var(--muted); font-size:.9rem; } .message, .field-message { min-height:1.4em; margin:8px 0 0; color:var(--green); font-size:.9rem; font-weight:700; }
+.step-warning { margin:10px 0 0; color:#9a5b34; font-size:.9rem; font-weight:700; } .step-warning:empty { display:none; }
+.prompt-field, .answer-field, .url-field { margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:10px; }
+.prompt-field label, .answer-field label, .url-field label { margin-top:0; }
+.answer-field { background:#fffdf7; }
+.url-target { margin:7px 0 0; color:var(--muted); font-size:.9rem; }
+footer { padding:0 18px 24px; text-align:center; font-size:.84rem; } footer a { color:var(--green); font-weight:700; }
+@media (min-width:769px) { .topbar { padding:18px 22px 6px; } main { padding:10px 22px 32px; } .card { padding:20px; } .step summary { padding-left:20px; } .step-body { padding:0 20px 20px; } }
+@media (max-width:768px) { .topbar { padding-left:12px; padding-right:12px; } .topbar h1 { font-size:1.3rem; } main { padding:8px 10px 24px; } .card { padding:14px; margin:10px 0; } .step { margin-top:10px; } .step-body { padding:0 14px 14px; } }

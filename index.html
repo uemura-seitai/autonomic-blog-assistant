@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#286a63" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ブログ作成補助" />
+  <title>ブログ作成補助ツール</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body id="top">
+  <header class="topbar">
+    <p>ブログ作成補助ツール</p>
+    <h1>スマホで完結する記事作成</h1>
+  </header>
+
+  <main>
+    <section class="card setup">
+      <h2>記事の基本情報</h2>
+      <label>テーマ・悩み<input id="theme" data-save placeholder="例：寝る前に動悸がして眠れない" /></label>
+      <details class="settings">
+        <summary>詳細設定（任意）</summary>
+        <div class="settings-body">
+          <p class="hint">毎回の入力は不要です。必要なときだけ指定してください。</p>
+          <label>読者像<input id="reader" data-save placeholder="例：40代、仕事と家事で疲れている女性" /></label>
+          <label>補足・避けたい表現（症状名も指定可）<textarea id="notes" data-save placeholder="例：症状名：足のむくみ&#10;医療的な断定は避け、やさしく安心感のある文体にする"></textarea></label>
+        </div>
+      </details>
+    </section>
+
+    <section class="workflow" id="workflow"></section>
+
+    <section class="card actions">
+      <button class="secondary" id="saveNow">この内容を保存</button>
+      <button class="danger" id="clearAll">入力をすべて消去</button>
+      <p id="saveMessage" class="message" aria-live="polite"></p>
+    </section>
+  </main>
+  <footer><a href="#top">ページ上部へ戻る</a></footer>
+  <script src="./script.js"></script>
+</body>
+</html>
