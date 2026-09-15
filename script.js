@@ -29,3 +29,51 @@ render();updateImageUrlFields();load();update();updateImageUrlFields();updateSta
 if('serviceWorker' in navigator&&location.protocol!=='file:'){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
 }
+
+// うえむら整体院HPブログは、既存6STEPとは完全に別の保存領域・DOMを使う。
+const CLINIC_STORAGE_KEY='uemura-clinic-hp-blog-v1';
+const clinicSteps=[
+  ['おすすめタイトル作成','元テーマ・病名から、患者さんに伝わりやすい投稿タイトルを選びます。'],
+  ['記事一式作成','採用タイトルをもとに、WordPressに必要な記事一式を作成します。'],
+  ['アイキャッチ画像作成','完成記事に合う、横長のアイキャッチ画像を作成します。']
+];
+const clinicEl=id=>document.getElementById(id);
+const clinicValue=id=>clinicEl(id)?.value.trim()||'';
+const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function clinicPrompt(n){ return clinicEl(`clinic-step${n}-prompt`); }
+function clinicAnswer(n){ return clinicEl(`clinic-step${n}-answer`); }
+function clinicStatus(n,done,label){const e=clinicEl(`clinic-status-${n}`);if(!e)return;e.textContent=`状態：${label||(done?'回答貼り付け済み':'未作成')}`;e.classList.toggle('is-done',done);}
+function clinicNotice(n,text=''){const e=clinicEl(`clinic-warning-${n}`);if(e)e.textContent=text;}
+function renderClinic(){
+  clinicEl('clinicWorkflow').innerHTML=clinicSteps.map(([name,desc],i)=>{const n=i+1;let extra='';
+    if(n===1)extra='<div class="answer-field"><label>元テーマ・病名<input id="clinic-theme" data-clinic-save placeholder="例：甲状腺機能低下症に伴う自律神経症状"></label></div>';
+    if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><p class="hint">STEP1の回答はプロンプトに自動で反映されます。</p></div>';
+    return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div><div class="answer-field"><label>ChatGPTの回答を貼り付ける欄<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="ChatGPTの回答をここに貼り付け"></textarea></label><button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div></div></details>`;
+  }).join('');
+}
+function clinicUpdate(){
+  const theme=clinicValue('clinic-theme')||'〇〇';
+  const answer1=clinicValue('clinic-step1-answer');
+  const title=clinicValue('clinic-title');
+  const answer2=clinicValue('clinic-step2-answer');
+  clinicPrompt(1).value=`あなたは「うえむら整体院」の自律神経ブログを作成するプロのWebライターです。\n\n以下の元テーマ・病名から、おすすめ投稿タイトルを複数提案してください。\n\n【元テーマ・病名】\n${theme}\n\n【タイトルの条件】\n・一般の患者さんが見て分かりやすい\n・短い\n・検索されやすい\n・「自分の症状かもしれない」と感じやすい\n・必要以上に長くしない\n・元テーマと意味を変えない\n・病名そのものが一般的で検索需要もある場合は、無理に症状名へ変更しない\n\nおすすめタイトル候補を複数提示し、\n最後に「最もおすすめ」を1つ提示してください。\n\n記事本文・パーマリンク・タグなどはまだ作成しないでください。`;
+  const step2Warning=!answer1?'STEP1のChatGPT回答を貼り付けてください。':!title?'最終的に採用した投稿タイトルを入力してください。':'';
+  clinicNotice(2,step2Warning);
+  clinicPrompt(2).value=step2Warning?'':`あなたは「うえむら整体院」の自律神経ブログを作成するプロのWebライターです。医学的正確性を最優先し、一般の患者さんにわかりやすい記事を作成してください。\n\n【STEP1のタイトル候補・回答】\n${answer1}\n\n【最終的に採用した投稿タイトル】\n${title}\n\n以下を必ず、順番を一切変えずに作成してください。各項目の内容は必ず個別のコードブロックに入れてください。説明文や項目の追加は不要です。\n\n### パーマリンク\n\`\`\`text\n英小文字・ハイフン形式。\n\`\`\`\n\n### カテゴリ\n\`\`\`text\n次の12種類から必ず1つだけ選ぶ。新しいカテゴリは作らない。\n1. ホルモン・代謝・婦人科\n2. めまい・耳の症状\n3. 全身性・その他の自律神経症状\n4. 冷え・ほてり・汗・むくみ\n5. 動悸・血圧・失神\n6. 呼吸・胸の症状\n7. 排尿・泌尿器の悩み\n8. 疲労・ストレス・不安\n9. 睡眠の悩み\n10. 神経疾患に伴う自律神経障害\n11. 胃腸・お腹の不調\n12. 頭痛・目・のどの症状\n\`\`\`\n\n### タグ\n\`\`\`text\nWordPress用タグをカンマ区切りで。\n\`\`\`\n\n### 記事本文\n\`\`\`html\n<article style="max-width:780px;margin:0 auto;color:#222;font-size:16px;line-height:2.2;">\n…\n</article>\n\`\`\`\n\n### メタディスクリプション\n\`\`\`text\n記事内容を簡潔に説明し、投稿タイトル・主要キーワードを自然に含める。SEOキーワードを不自然に羅列しない。\n\`\`\`\n\n### フォーカスキーフレーズ\n\`\`\`text\n記事内容・検索意図・SEOに最も適したものを1つだけ。投稿タイトルと同一でなくてよい。\n\`\`\`\n\n【記事本文HTMLの必須要件】\n・2026年9月に作成した「耳管開放症」の記事構成・説明量を基準にし、簡略化しない。読者が「なぜその症状が起こるのか」を理解できる内容にする。\n・WordPress投稿タイトルと、記事冒頭のSEOタイトルは分ける。最初のH2は <h2 style="margin:2.5em 0 1em;line-height:1.6;"><strong>SEOタイトル</strong></h2> とし、病名／症状、代表的な悩み、自律神経との関係を自然に含める。\n・次のH2は <h2 style="margin:2.5em 0 1em;"><strong>この記事でわかること</strong></h2>。単なる箇条書きにせず、「何もしていないのに心臓がドキドキする」「以前より汗をかきやすくなった」などテーマに合う具体症状から始め、病気／症状の概要、身体で起きていること、自律神経との関係、記事で説明する内容まで説明する。\n・目次は危険レベルと受診の目安、症状チェック、原因と自律神経との関係、自宅でできる生活ケア、うえむら整体院でできること、まとめへリンクする。各H2のidは順に risk、check、cause、care、clinic、summary を使う。\n・「危険レベルと受診の目安」はテーマに応じて危険レベル（例：●●〇〇〇）を示し、原則3段階程度で説明する。各ボックスに必ず「状態：」「目安：」「行動：」を含め、重大な病気を自律神経の乱れとして片付けない。\n・「症状チェック」は10項目前後の <ul style="line-height:2.2;"> を使う。チェックリスト後に、特徴的な症状、他の病気との違い、症状だけでは診断できないことを説明する。\n・「原因と自律神経との関係」は中心部分として複数のH3を使う。「そもそも○○とは？」「身体では何が起こっている？」「原因1〜3」「なぜ○○が起こるの？」「自律神経とはどのような関係がある？」「ストレスとの関係」「どのように診断するの？」など、患者さんが抱きやすい疑問をテーマに合わせて使う。\n・医学的な病態がある疾患を何でも自律神経の乱れが原因とは説明しない。「自律神経の乱れが原因です」「自律神経を整えれば治ります」「整体で治ります」と断定しない。疾患そのものの医学的原因・病態を先に説明し、自律神経との関係は分けて説明する。必要に応じて「自律神経が乱れたことが○○の直接的な原因という意味ではありません」「この症状だけで○○と判断することはできません」「ほかの疾患でも同様の症状が起こることがあります」を入れる。\n・「自宅でできる生活ケア」は、医療機関で診断・治療が必要な疾患なら最初にそれを説明する。その後、テーマに合う具体的な生活ケアを8〜10項目程度示し、睡眠・食事・運動だけの一般論にしない。\n・「うえむら整体院でできること」の施設名は必ず「うえむら整体院」。病気そのものを診断・治療できる表現はしない。「○○は医療機関で診断・治療を受ける必要がある病気です」「うえむら整体院で○○そのものを診断・治療することはできません」を必要に応じて明記する。その上で睡眠、疲労、呼吸、姿勢、身体の緊張など身体面を確認することを書く。自然に合う場合は「自律神経が働きやすく、夜に深く眠り、一晩寝たらしっかり回復できる身体づくりをサポートします。」を使うが、「自律神経を整えれば○○が治るという意味ではありません」と線引きする。\n・「まとめ」は、どんな病気／症状か、代表的症状、主な原因や仕組み、自律神経との関係、受診すべきケースを簡潔に振り返り、読者が次に何をすればよいか分かる文章で終える。`;
+  const step3Warning=!answer2?'STEP2の記事一式の回答を貼り付けてください。':!title?'採用タイトルを入力してください。':'';
+  clinicNotice(3,step3Warning);
+  clinicPrompt(3).value=step3Warning?'':`あなたは「うえむら整体院」の自律神経ブログのデザイナーです。以下の記事用に、アイキャッチ画像を1枚作成してください。\n\n【投稿タイトル】\n${title}\n\n【記事一式】\n${answer2}\n\n【画像の条件】\n・ブログに使いやすい横長16:9\n・文字入れなし、図解なし、コラージュ・分割画面なし\n・記事内容が自然に伝わる人物と背景だけのシンプルな1場面\n・30〜50代の日本人を基本に、清潔感と安心感のある自然な雰囲気\n・症状や苦痛を大げさに表現しない\n・過度に医療的な機器を強調しない`;
+  clinicStatus(1,!!clinicValue('clinic-step1-answer'));
+  clinicStatus(2,!!answer2);
+  clinicStatus(3,!!clinicValue('clinic-step3-answer'));
+}
+function clinicSave(show=false){const data={theme:clinicEl('clinic-theme')?.value||'',title:clinicEl('clinic-title')?.value||'',answers:{1:clinicEl('clinic-step1-answer')?.value||'',2:clinicEl('clinic-step2-answer')?.value||'',3:clinicEl('clinic-step3-answer')?.value||''}};localStorage.setItem(CLINIC_STORAGE_KEY,JSON.stringify(data));if(show)clinicEl('clinicSaveMessage').textContent='うえむら整体院HPブログの内容をこの端末に保存しました。';}
+function clinicLoad(){try{const d=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');if(clinicEl('clinic-theme'))clinicEl('clinic-theme').value=d.theme||'';if(clinicEl('clinic-title'))clinicEl('clinic-title').value=d.title||'';Object.entries(d.answers||{}).forEach(([n,v])=>clinicAnswer(n).value=v||'');}catch(_){}}
+function showBlog(kind){const director=kind==='director';clinicEl('directorBlog').hidden=!director;clinicEl('clinicBlog').hidden=director;document.querySelectorAll('.blog-switch').forEach(b=>{const active=b.dataset.blog===kind;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',active);});localStorage.setItem('totto-blog-assistant-active-blog',kind);}
+
+renderClinic();clinicLoad();clinicUpdate();
+document.querySelectorAll('.blog-switch').forEach(b=>b.addEventListener('click',()=>showBlog(b.dataset.blog)));
+showBlog(localStorage.getItem('totto-blog-assistant-active-blog')||'director');
+document.addEventListener('input',e=>{if(!e.target.matches('[data-clinic-save]'))return;clinicUpdate();clinicSave();});
+document.addEventListener('click',e=>{const copyId=e.target.dataset.clinicCopy;if(copyId)copy(copyId,e.target.dataset.clinicMessage);const n=e.target.dataset.clinicAnswerSave;if(n){clinicSave();clinicEl(`clinic-answer-message-${n}`).textContent='回答を保存しました。';}if(e.target.id==='clinicSaveNow')clinicSave(true);if(e.target.id==='clinicClearAll'&&confirm('うえむら整体院HPブログの保存内容をすべて消去しますか？')){localStorage.removeItem(CLINIC_STORAGE_KEY);location.reload();}});

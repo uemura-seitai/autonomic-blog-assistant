@@ -19,6 +19,13 @@
   </header>
 
   <main>
+    <nav class="blog-switcher" aria-label="作成するブログを選択">
+      <button type="button" class="blog-switch is-active" data-blog="director" aria-pressed="true">うえむら院長ブログ</button>
+      <button type="button" class="blog-switch" data-blog="clinic" aria-pressed="false">うえむら整体院HPブログ</button>
+    </nav>
+
+    <!-- 既存の院長ブログ。ID・構造を維持し、これまでの保存内容をそのまま利用する。 -->
+    <div id="directorBlog">
     <section class="card setup">
       <h2>記事の基本情報</h2>
       <label>テーマ・悩み<input id="theme" data-save placeholder="例：寝る前に動悸がして眠れない" /></label>
@@ -39,6 +46,20 @@
       <button class="danger" id="clearAll">入力をすべて消去</button>
       <p id="saveMessage" class="message" aria-live="polite"></p>
     </section>
+    </div>
+
+    <div id="clinicBlog" hidden>
+      <section class="card clinic-intro">
+        <h2>うえむら整体院HPブログ</h2>
+        <p class="hint">投稿タイトルから記事一式、アイキャッチ画像までを3STEPで作成します。</p>
+      </section>
+      <section class="workflow" id="clinicWorkflow"></section>
+      <section class="card actions">
+        <button class="secondary" id="clinicSaveNow">このブログの内容を保存</button>
+        <button class="danger" id="clinicClearAll">このブログの入力をすべて消去</button>
+        <p id="clinicSaveMessage" class="message" aria-live="polite"></p>
+      </section>
+    </div>
   </main>
   <footer><a href="#top">ページ上部へ戻る</a></footer>
   <script src="./script.js"></script>
