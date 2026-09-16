@@ -34,7 +34,7 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
 const CLINIC_STORAGE_KEY='uemura-clinic-hp-blog-v1';
 const BLOG_LINKS={
   director:{blog:'https://ima-shinshin.site/',chatgpt:'https://chatgpt.com/c/6aa8b8e4-55f8-83ee-8ba6-312343ec6cf3',chatgptIOS:'com.openai.chat://chatgpt.com/c/6aa8b8e4-55f8-83ee-8ba6-312343ec6cf3',wordpress:'https://ima-shinshin.site/wp-admin/edit.php?post_status=draft&post_type=post',wordpressIOS:'googlechromes://ima-shinshin.site/wp-admin/edit.php?post_status=draft&post_type=post'},
-  clinic:{blog:'https://uemura-seitaiin.com/',chatgpt:'https://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',chatgptIOS:'com.openai.chat://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',wordpress:'https://uemura-seitaiin.com/wp-admin/edit.php',wordpressIOS:'googlechromes://uemura-seitaiin.com/wp-admin/edit.php'}
+  clinic:{blog:'https://uemura-seitaiin.com/blog/',chatgpt:'https://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',chatgptIOS:'com.openai.chat://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',wordpress:'https://uemura-seitaiin.com/wp-admin/edit.php',wordpressIOS:'googlechromes://uemura-seitaiin.com/wp-admin/edit.php'}
 };
 const CLINIC_BLOG_THEMES = [
   {no:1,kana:'あ行',name:'胃食道逆流症（GERD）の自律神経性タイプ'},
