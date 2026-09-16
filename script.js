@@ -33,8 +33,8 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
 // うえむら整体院HPブログは、既存6STEPとは完全に別の保存領域・DOMを使う。
 const CLINIC_STORAGE_KEY='uemura-clinic-hp-blog-v1';
 const BLOG_LINKS={
-  director:{blog:'https://ima-shinshin.site/',chatgpt:'https://chatgpt.com/c/6aa8b8e4-55f8-83ee-8ba6-312343ec6cf3',wordpress:'https://ima-shinshin.site/wp-admin/edit.php?post_status=draft&post_type=post'},
-  clinic:{blog:'https://uemura-seitaiin.com/',chatgpt:'https://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',wordpress:'https://uemura-seitaiin.com/wp-admin/edit.php'}
+  director:{blog:'https://ima-shinshin.site/',chatgpt:'https://chatgpt.com/c/6aa8b8e4-55f8-83ee-8ba6-312343ec6cf3',chatgptApp:'com.openai.chat://chatgpt.com/c/6aa8b8e4-55f8-83ee-8ba6-312343ec6cf3',wordpress:'https://ima-shinshin.site/wp-admin/edit.php?post_status=draft&post_type=post',wordpressChrome:'googlechromes://ima-shinshin.site/wp-admin/edit.php?post_status=draft&post_type=post'},
+  clinic:{blog:'https://uemura-seitaiin.com/',chatgpt:'https://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',chatgptApp:'com.openai.chat://chatgpt.com/c/6aaa4fb9-e234-83ee-aa37-92c1e08c2c5e',wordpress:'https://uemura-seitaiin.com/wp-admin/edit.php',wordpressChrome:'googlechromes://uemura-seitaiin.com/wp-admin/edit.php'}
 };
 const CLINIC_BLOG_THEMES = [
   {no:1,kana:'あ行',name:'胃食道逆流症（GERD）の自律神経性タイプ'},
@@ -171,12 +171,28 @@ function clinicUpdate(){
 }
 function clinicSave(show=false){let previous={};try{previous=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');}catch(_){}const data={theme:clinicEl('clinic-theme')?.value||'',title:clinicEl('clinic-title')?.value||'',answers:{1:clinicEl('clinic-step1-answer')?.value||'',2:clinicEl('clinic-step2-answer')?.value||'',3:previous.answers?.[3]||''}};localStorage.setItem(CLINIC_STORAGE_KEY,JSON.stringify(data));if(show)clinicEl('clinicSaveMessage').textContent='うえむら整体院HPブログの内容をこの端末に保存しました。';}
 function clinicLoad(){try{const d=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');if(clinicEl('clinic-theme'))clinicEl('clinic-theme').value=d.theme||'';if(clinicEl('clinic-title'))clinicEl('clinic-title').value=d.title||'';Object.entries(d.answers||{}).forEach(([n,v])=>clinicAnswer(n).value=v||'');}catch(_){}}
-function renderBlogQuickLinks(kind){const links=BLOG_LINKS[kind],container=clinicEl('blogQuickLinks');if(!links||!container)return;container.innerHTML=[['blog','ブログを見る'],['chatgpt','ChatGPTを開く'],['wordpress','WordPress投稿ページ']].map(([key,label])=>`<a class="blog-quick-link" href="${links[key]}" target="_blank" rel="noopener noreferrer">${label}</a>`).join('');}
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function openHttpsInNewTab(url){window.open(url,'_blank','noopener,noreferrer');}
+function openMobileAppWithFallback(appUrl,fallbackUrl){
+  let leftPage=false;
+  let fallbackTab=window.open('','_blank');
+  if(fallbackTab)fallbackTab.opener=null;
+  const markLeft=()=>{leftPage=true;cleanup();if(fallbackTab&&!fallbackTab.closed)fallbackTab.close();};
+  const cleanup=()=>{document.removeEventListener('visibilitychange',onVisibilityChange);window.removeEventListener('pagehide',markLeft);};
+  const onVisibilityChange=()=>{if(document.visibilityState==='hidden')markLeft();};
+  document.addEventListener('visibilitychange',onVisibilityChange);
+  window.addEventListener('pagehide',markLeft,{once:true});
+  window.location.href=appUrl;
+  window.setTimeout(()=>{if(leftPage||document.visibilityState==='hidden')return;cleanup();if(fallbackTab&&!fallbackTab.closed)fallbackTab.location.replace(fallbackUrl);else window.location.href=fallbackUrl;},1200);
+}
+function openWorkLink(kind,type){const links=BLOG_LINKS[kind];if(!links)return;if(!isIOS()){openHttpsInNewTab(links[type]);return;}openMobileAppWithFallback(type==='chatgpt'?links.chatgptApp:links.wordpressChrome,links[type]);}
+function renderBlogQuickLinks(kind){const links=BLOG_LINKS[kind],container=clinicEl('blogQuickLinks');if(!links||!container)return;container.innerHTML=`<a class="blog-quick-link" href="${links.blog}" target="_blank" rel="noopener noreferrer">ブログを見る</a><button type="button" class="blog-quick-link" data-work-link="chatgpt">ChatGPT</button><button type="button" class="blog-quick-link" data-work-link="wordpress">WordPress</button>`;}
 function showBlog(kind){const director=kind==='director';clinicEl('directorBlog').hidden=!director;clinicEl('clinicBlog').hidden=director;document.querySelectorAll('.blog-switch').forEach(b=>{const active=b.dataset.blog===kind;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',active);});renderBlogQuickLinks(kind);localStorage.setItem('totto-blog-assistant-active-blog',kind);}
 
 renderClinic();clinicLoad();migrateSavedClinicTitle();clinicUpdate();renderLastCreatedPost();
 document.querySelectorAll('.blog-switch').forEach(b=>b.addEventListener('click',()=>showBlog(b.dataset.blog)));
 showBlog(localStorage.getItem('totto-blog-assistant-active-blog')||'director');
+document.addEventListener('click',e=>{const button=e.target.closest('[data-work-link]');if(button)openWorkLink(localStorage.getItem('totto-blog-assistant-active-blog')||'director',button.dataset.workLink);});
 document.addEventListener('input',e=>{if(!e.target.matches('[data-clinic-save]'))return;clinicUpdate();clinicSave();});
 document.addEventListener('click',e=>{const copyId=e.target.dataset.clinicCopy;if(copyId)copy(copyId,e.target.dataset.clinicMessage);const n=e.target.dataset.clinicAnswerSave;if(n){clinicSave();if(n==='2'&&clinicValue('clinic-step2-answer'))saveLastCreatedPost();clinicEl(`clinic-answer-message-${n}`).textContent='回答を保存しました。';}if(e.target.id==='clinicSaveNow')clinicSave(true);if(e.target.id==='clinicClearAll'&&confirm('うえむら整体院HPブログの保存内容をすべて消去しますか？')){localStorage.removeItem(CLINIC_STORAGE_KEY);location.reload();}});
 document.addEventListener('input',e=>{if(e.target.id==='clinic-theme-search')renderClinicThemeList();});
