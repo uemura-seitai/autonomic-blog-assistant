@@ -29,6 +29,12 @@
     <section class="card setup">
       <h2>記事の基本情報</h2>
       <label>テーマ・悩み<input id="theme" data-save placeholder="例：寝る前に動悸がして眠れない" /></label>
+      <button type="button" class="title-history-picker-button" id="openTitleHistoryPicker">HPブログ投稿タイトルから選ぶ</button>
+      <section class="title-history-picker" id="title-history-picker" hidden aria-label="HPブログ投稿タイトル一覧">
+        <div class="title-history-picker-head"><strong>HPブログ投稿タイトル一覧</strong><button type="button" class="secondary title-history-close" id="closeTitleHistoryPicker">一覧を閉じる</button></div>
+        <input id="title-history-search" type="search" placeholder="投稿タイトルを検索" aria-label="投稿タイトルを検索">
+        <div class="title-history-results" id="title-history-results" aria-live="polite"></div>
+      </section>
       <details class="settings">
         <summary>詳細設定（任意）</summary>
         <div class="settings-body">
@@ -53,9 +59,11 @@
         <h2>うえむら整体院HPブログ</h2>
         <p class="hint">投稿タイトルから記事一式、アイキャッチ画像までを3STEPで作成します。</p>
       </section>
+      <section class="card last-created-post" id="lastCreatedPost" aria-live="polite"></section>
       <section class="workflow" id="clinicWorkflow"></section>
       <section class="card actions">
-        <button class="secondary" id="clinicSaveNow">このブログの内容を保存</button>
+        <button class="secondary" id="clinicSaveNow">作業内容をこの端末に保存</button>
+        <p class="hint">この端末のブラウザに保存されます。WordPressやGitHubには保存されません。</p>
         <button class="danger" id="clinicClearAll">このブログの入力をすべて消去</button>
         <p id="clinicSaveMessage" class="message" aria-live="polite"></p>
       </section>

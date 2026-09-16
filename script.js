@@ -32,6 +32,37 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
 
 // うえむら整体院HPブログは、既存6STEPとは完全に別の保存領域・DOMを使う。
 const CLINIC_STORAGE_KEY='uemura-clinic-hp-blog-v1';
+const CLINIC_BLOG_THEMES = [
+  {no:1,kana:'あ行',name:'胃食道逆流症（GERD）の自律神経性タイプ'},
+  {no:2,kana:'あ行',name:'一次性高血圧のうち交感神経過活動優位型高血圧'},
+  {no:3,kana:'あ行',name:'インスリン抵抗性に伴う自律神経過活動'},
+  {no:4,kana:'あ行',name:'嚥下困難感（ヒステリー球・咽喉頭異常感症）'},
+  {no:5,kana:'か行',name:'過活動膀胱（OAB）'}, {no:6,kana:'か行',name:'過換気症候群'}, {no:7,kana:'か行',name:'過換気症候群に伴う上腹部不快感'}, {no:8,kana:'か行',name:'過敏性腸症候群（IBS）'}, {no:9,kana:'か行',name:'過敏性食道けいれん'}, {no:10,kana:'か行',name:'過敏性胆道ジスキネジー（胆嚢運動異常）'}, {no:11,kana:'か行',name:'過敏性不眠症（寝つきの悪さ・中途覚醒）'}, {no:12,kana:'か行',name:'過度の交感神経緊張による頻脈発作'}, {no:13,kana:'か行',name:'家族性アミロイドポリニューロパチーに伴う自律神経障害'}, {no:14,kana:'か行',name:'寒冷誘発性レイノー現象'}, {no:15,kana:'か行',name:'起立性調節障害（OD）'}, {no:16,kana:'か行',name:'起立性頻脈を伴う心因性動悸'}, {no:17,kana:'か行',name:'緊張型頭痛'}, {no:18,kana:'か行',name:'機能性眼精疲労（VDT症候群を含む）'}, {no:19,kana:'か行',name:'機能性胸痛（心臓神経症）'}, {no:20,kana:'か行',name:'機能性呼吸困難（息が吸いにくい・息苦しさ）'}, {no:21,kana:'か行',name:'機能性勃起障害（ED：精神・自律神経性）'}, {no:22,kana:'か行',name:'機能性ディスペプシア（FD）'}, {no:23,kana:'か行',name:'機能性低血糖症（自律神経症状優位の低血糖）'}, {no:24,kana:'か行',name:'機能性尿失禁（切迫性尿失禁）'}, {no:25,kana:'か行',name:'機能性発熱（ストレス性微熱）'}, {no:26,kana:'か行',name:'機能性発声障害（心因性・自律神経性失声）'}, {no:27,kana:'か行',name:'機能性腹痛症候群（FAPS）'}, {no:28,kana:'か行',name:'機能性不妊症（ストレス・自律神経要因が強いタイプ）'}, {no:29,kana:'か行',name:'ギラン・バレー症候群後の自律神経障害'}, {no:30,kana:'か行',name:'群発頭痛（自律神経症状を強く伴う頭痛）'}, {no:31,kana:'か行',name:'血管迷走神経性失神を繰り返す体質'}, {no:32,kana:'か行',name:'月経前症候群（PMS）の自律神経優位症状'}, {no:33,kana:'か行',name:'甲状腺機能亢進症に伴う自律神経症状'}, {no:34,kana:'か行',name:'甲状腺機能低下症に伴う自律神経症状'}, {no:35,kana:'か行',name:'更年期障害（自律神経症状が主体のタイプ）'}, {no:36,kana:'か行',name:'骨盤内うっ血症候群'}, {no:37,kana:'か行',name:'喉頭けいれん発作'}, {no:38,kana:'か行',name:'耳管開放症に伴う自律神経不安定'}, {no:39,kana:'か行',name:'間質性膀胱炎・膀胱痛症候群'},
+  {no:40,kana:'さ行',name:'自律神経失調症（自律神経機能異常）'}, {no:41,kana:'さ行',name:'自律神経性てんかん発作（自律発作優位のてんかん）'}, {no:42,kana:'さ行',name:'自律神経失調に伴う慢性頭重感・締め付け感'}, {no:43,kana:'さ行',name:'自律神経失調に伴う慢性疲労・倦怠感'}, {no:44,kana:'さ行',name:'自律神経性肥満症（ストレス過食・代謝低下）'}, {no:45,kana:'さ行',name:'純粋自律神経不全症（Pure autonomic failure）'}, {no:46,kana:'さ行',name:'神経調節性失神（血管迷走神経性失神・神経調節性低血圧）'}, {no:47,kana:'さ行',name:'神経循環無力症（Da Costa症候群・心臓神経症）'}, {no:48,kana:'さ行',name:'神経性胃炎（ストレス性胃炎・機能性胃腸症）'}, {no:49,kana:'さ行',name:'神経循環失調による息切れ・胸部絞扼感'}, {no:50,kana:'さ行',name:'神経因性膀胱（排尿障害）'}, {no:51,kana:'さ行',name:'失神を伴う心因性・機能性心疾患（自律神経反射優位）'}, {no:52,kana:'さ行',name:'失神前駆症候群（立ちくらみ・眼前暗黒感を繰り返す状態）'}, {no:53,kana:'さ行',name:'食後低血圧による消化器症状'}, {no:54,kana:'さ行',name:'周期性嘔吐症（自律神経性・機能性嘔吐）'}, {no:55,kana:'さ行',name:'周期性四肢運動障害（PLMD）'}, {no:56,kana:'さ行',name:'心拍変動低下症候群（自律神経機能低下）'}, {no:57,kana:'さ行',name:'心身症（身体表現性障害・自律神経症状主体）'}, {no:58,kana:'さ行',name:'ストレス性の冷え症（末梢循環自律神経障害）'}, {no:59,kana:'さ行',name:'ストレス性・緊張性高血圧発作'}, {no:60,kana:'さ行',name:'ストレス関連ホルモン異常（コルチゾール日内リズム異常）'}, {no:61,kana:'さ行',name:'ストレス誘発性喘息発作（自律神経性気道過敏）'}, {no:62,kana:'さ行',name:'睡眠時無呼吸症候群に伴う自律神経異常'}, {no:63,kana:'さ行',name:'前庭神経炎'}, {no:64,kana:'さ行',name:'線維筋痛症（自律神経異常を伴う痛み症候群）'}, {no:65,kana:'さ行',name:'前立腺肥大症に伴う自律神経性排尿障害'}, {no:66,kana:'さ行',name:'全般性不安症（不安障害）'},
+  {no:67,kana:'た行',name:'体位性頻脈症候群／起立性頻脈症候群（POTS）'}, {no:68,kana:'た行',name:'体位性低血圧（起立性低血圧）'}, {no:69,kana:'た行',name:'多系統萎縮症・自律神経障害型（MSA）'}, {no:70,kana:'た行',name:'胆道ジスキネジアに伴う右季肋部痛'}, {no:71,kana:'た行',name:'低血圧症（体質性低血圧・神経調節性低血圧）'}, {no:72,kana:'た行',name:'適応障害に伴う自律神経症状'}, {no:73,kana:'た行',name:'糖尿病性自律神経ニューロパチー'},
+  {no:74,kana:'な行',name:'乗り物酔い（動揺病・自律神経過敏）'}, {no:75,kana:'な行',name:'呑気症（空気嚥下症）'},
+  {no:76,kana:'は行',name:'反射性失神（状況失神などを含む）'}, {no:77,kana:'は行',name:'パーキンソン病に伴う自律神経障害'}, {no:78,kana:'は行',name:'パニック障害'}, {no:79,kana:'は行',name:'冷えのぼせ（上熱下寒）'}, {no:80,kana:'は行',name:'不適切洞性頻脈（IST）'}, {no:81,kana:'は行',name:'副腎疲労症候群（副腎機能低下症候群と呼ばれる状態像）'}, {no:82,kana:'は行',name:'片頭痛（自律神経症状を伴うタイプ）'}, {no:83,kana:'は行',name:'発作性上室性頻拍に自律神経異常を伴うタイプ'}, {no:84,kana:'は行',name:'本態性徐脈・洞不全症候群の自律神経性タイプ'}, {no:85,kana:'は行',name:'本態性顔面紅潮・紅潮恐怖症'}, {no:86,kana:'は行',name:'本態性多汗症（手掌多汗症など）'}, {no:87,kana:'は行',name:'本態性高血圧（交感神経亢進型）'}, {no:88,kana:'は行',name:'本態性起立性浮腫（夕方に悪化するむくみ）'},
+  {no:89,kana:'ま行',name:'末梢循環不全による手足の冷感・しびれ'}, {no:90,kana:'ま行',name:'末梢血管れん縮による冷え・しびれ症'}, {no:91,kana:'ま行',name:'慢性特発性便秘（腸管自律神経機能低下）'}, {no:92,kana:'ま行',name:'慢性下痢症（交感神経緊張型）'}, {no:93,kana:'ま行',name:'慢性過換気症候群'}, {no:94,kana:'ま行',name:'慢性疲労症候群（ME／CFS）'}, {no:95,kana:'ま行',name:'めまい症（自律神経性めまい）'}, {no:96,kana:'ま行',name:'メニエール病'},
+  {no:97,kana:'や行',name:'夜間頻尿（自律神経調節異常）'},
+  {no:98,kana:'ら行',name:'良性発作性頭位めまい症に伴う自律神経失調'}, {no:99,kana:'ら行',name:'レビー小体型認知症に伴う自律神経障害'}, {no:100,kana:'ら行',name:'レストレスレッグス症候群（むずむず脚症候群）'}
+];
+const CUSTOM_THEMES_STORAGE_KEY='uemura-clinic-custom-themes-v1';
+const TITLE_HISTORY_STORAGE_KEY='uemura-hp-post-title-history-v1';
+const LAST_CREATED_POST_STORAGE_KEY='uemura-clinic-last-created-post-v1';
+const EXISTING_HP_POST_TITLES=['甲状腺機能亢進症','甲状腺機能低下症','更年期の不調','骨盤の重だるさ・下腹部痛','喉が詰まって息ができない','耳管開放症','間質性膀胱炎','自律神経失調症','てんかん','頭が重い・スッキリしない','体のだるさ・倦怠感','ストレスによる過食','純粋自律神経不全症','緊張や痛みで起こる失神','運動時の動悸','ストレス性胃炎','息切れ','神経因性膀胱','心因性失神','立ちくらみ','食後低血圧','周期性嘔吐症','周期性四肢運動障害','心拍変動の低下','心身症','ストレス性冷え症','ストレス性高血圧','ストレスホルモンの乱れ','気管支喘息','睡眠時無呼吸症候群','前庭神経炎','前立腺肥大症','不安障害','起立性頻脈症候群','起立性低血圧','多系統萎縮症','右わき腹の痛み','低血圧症','適応障害','糖尿病による自律神経障害','乗り物酔い','呑気症','反射性失神','パーキンソン病の自律神経障害','パニック障害','冷えのぼせ','安静時の頻脈','副腎疲労症候群','偏頭痛','急な動悸','徐脈（脈が遅い）','顔の赤み','多汗症','高血圧','足のむくみ','手足の冷え・血流低下','手足の冷え・しびれ','便秘','下痢','息苦しさ','慢性疲労症候群（ME／CFS）','めまい症（自律神経性めまい）','メニエール病','夜間頻尿','良性発作性頭位めまい症','レビー小体型認知症','レストレスレッグス症候群（むずむず脚症候群）'];
+const CLINIC_KANA_OPTIONS=['あ行','か行','さ行','た行','な行','は行','ま行','や行','ら行'];
+function readStorageArray(key){try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[];}catch(_){return [];}}
+function loadCustomThemes(){return readStorageArray(CUSTOM_THEMES_STORAGE_KEY).filter(theme=>theme&&theme.id&&Number.isInteger(theme.no)&&CLINIC_KANA_OPTIONS.includes(theme.kana)&&typeof theme.name==='string');}
+function saveCustomThemes(themes){localStorage.setItem(CUSTOM_THEMES_STORAGE_KEY,JSON.stringify(themes));}
+function allClinicThemes(){return [...CLINIC_BLOG_THEMES,...loadCustomThemes()];}
+function loadTitleHistory(){return readStorageArray(TITLE_HISTORY_STORAGE_KEY).filter(item=>item&&item.id&&typeof item.title==='string'&&typeof item.createdAt==='string');}
+function saveTitleHistory(history){localStorage.setItem(TITLE_HISTORY_STORAGE_KEY,JSON.stringify(history));}
+function addTitleToHistory(title){const trimmed=title.trim();if(!trimmed)return;const history=loadTitleHistory();if(history.some(item=>item.title.trim()===trimmed))return;history.unshift({id:`title-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,title:trimmed,createdAt:new Date().toISOString()});saveTitleHistory(history);}
+function normalizedTitle(title){return String(title||'').trim();}
+function allPostTitles(){const titles=new Map();EXISTING_HP_POST_TITLES.forEach(title=>titles.set(normalizedTitle(title),{title:normalizedTitle(title),fixed:true}));loadTitleHistory().forEach(item=>{const title=normalizedTitle(item.title);if(title&&!titles.has(title))titles.set(title,{title,fixed:false,createdAt:item.createdAt,id:item.id});});return [...titles.values()].sort((a,b)=>a.title.localeCompare(b.title,'ja'));}
+function formatSavedAt(savedAt){const date=new Date(savedAt);return Number.isNaN(date.getTime())?'':date.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).replace(/\//g,'/');}
+function renderLastCreatedPost(){const card=clinicEl('lastCreatedPost');if(!card)return;let post=null;try{post=JSON.parse(localStorage.getItem(LAST_CREATED_POST_STORAGE_KEY)||'null');}catch(_){}if(!post||!normalizedTitle(post.title)){card.innerHTML='<h3>前回作成した記事</h3><p class="last-created-post-meta">まだ作成履歴がありません</p>';return;}card.innerHTML=`<h3>前回作成した記事</h3><p class="last-created-post-title">${esc(post.title)}</p><p class="last-created-post-meta">元テーマ：${esc(post.theme||'')}</p><p class="last-created-post-meta">最終保存：${esc(formatSavedAt(post.savedAt)||'')}</p>`;}
+function saveLastCreatedPost(){const title=clinicValue('clinic-title'),theme=clinicValue('clinic-theme');if(!title)return;localStorage.setItem(LAST_CREATED_POST_STORAGE_KEY,JSON.stringify({title,theme,savedAt:new Date().toISOString()}));renderLastCreatedPost();}
 const clinicSteps=[
   ['おすすめタイトル作成','元テーマ・病名から、患者さんに伝わりやすい投稿タイトルを選びます。'],
   ['記事一式作成','採用タイトルをもとに、WordPressに必要な記事一式を作成します。'],
@@ -45,11 +76,77 @@ function clinicPrompt(n){ return clinicEl(`clinic-step${n}-prompt`); }
 function clinicAnswer(n){ return clinicEl(`clinic-step${n}-answer`); }
 function clinicStatus(n,done,label){const e=clinicEl(`clinic-status-${n}`);if(!e)return;e.textContent=`状態：${label||(done?'回答貼り付け済み':'未作成')}`;e.classList.toggle('is-done',done);}
 function clinicNotice(n,text=''){const e=clinicEl(`clinic-warning-${n}`);if(e)e.textContent=text;}
+let clinicThemeKana='すべて';
+function renderClinicThemeList(){
+  const query=(clinicEl('clinic-theme-search')?.value||'').trim().toLocaleLowerCase();
+  const matches=allClinicThemes().filter(theme=>(clinicThemeKana==='すべて'||theme.kana===clinicThemeKana)&&theme.name.toLocaleLowerCase().includes(query));
+  const results=clinicEl('clinic-theme-results');
+  if(!results)return;
+  results.innerHTML=matches.length?matches.map(theme=>`<article class="clinic-theme-item"><button type="button" class="clinic-theme-select" data-clinic-theme-name="${esc(theme.name)}"><span>No.${theme.no}${theme.id?' ・ 追加テーマ':''}</span>${esc(theme.name)}</button>${theme.id?`<div class="custom-theme-actions"><button type="button" data-edit-custom-theme="${esc(theme.id)}">編集</button><button type="button" data-delete-custom-theme="${esc(theme.id)}">削除</button></div>`:''}</article>`).join(''):'<p class="clinic-theme-empty">該当する元テーマ・病名がありません</p>';
+  document.querySelectorAll('[data-clinic-kana]').forEach(button=>button.classList.toggle('is-active',button.dataset.clinicKana===clinicThemeKana));
+}
+function ensureCustomThemeControls(){
+  const picker=clinicEl('clinic-theme-picker');
+  if(!picker||clinicEl('openCustomThemeForm'))return;
+  clinicEl('clinic-theme-search').insertAdjacentHTML('beforebegin','<button type="button" class="clinic-add-theme-button" id="openCustomThemeForm">＋ 新しいテーマを追加</button><section class="custom-theme-form" id="custom-theme-form" hidden><strong id="custom-theme-form-title">新しいテーマを追加</strong><label>五十音<select id="custom-theme-kana">'+CLINIC_KANA_OPTIONS.map(kana=>`<option value="${kana}">${kana}</option>`).join('')+'</select></label><label>元テーマ・病名<input id="custom-theme-name" placeholder="新しく追加するテーマを入力"></label><div class="custom-theme-form-actions"><button type="button" class="primary" id="saveCustomTheme">追加する</button><button type="button" class="secondary" id="cancelCustomTheme">キャンセル</button></div><p class="field-message" id="custom-theme-message" aria-live="polite"></p></section>');
+}
+function openClinicThemePicker(){const picker=clinicEl('clinic-theme-picker');if(!picker)return;ensureCustomThemeControls();picker.hidden=false;renderClinicThemeList();clinicEl('clinic-theme-search').focus();}
+function closeClinicThemePicker(){const picker=clinicEl('clinic-theme-picker');if(picker)picker.hidden=true;}
+function selectClinicTheme(name){
+  clinicEl('clinic-theme').value=name;
+  clinicUpdate();
+  clinicSave();
+  closeClinicThemePicker();
+  clinicEl('clinic-theme').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function openCustomThemeForm(theme=null){
+  const form=clinicEl('custom-theme-form');
+  if(!form)return;
+  form.hidden=false;
+  form.dataset.editId=theme?.id||'';
+  clinicEl('custom-theme-form-title').textContent=theme?'追加テーマを編集':'新しいテーマを追加';
+  clinicEl('saveCustomTheme').textContent=theme?'保存する':'追加する';
+  clinicEl('custom-theme-kana').value=theme?.kana||'あ行';
+  clinicEl('custom-theme-name').value=theme?.name||'';
+  clinicEl('custom-theme-message').textContent='';
+  clinicEl('custom-theme-name').focus();
+}
+function closeCustomThemeForm(){const form=clinicEl('custom-theme-form');if(form)form.hidden=true;}
+function saveCustomThemeFromForm(){
+  const form=clinicEl('custom-theme-form'),message=clinicEl('custom-theme-message');
+  const name=clinicEl('custom-theme-name').value.trim(),kana=clinicEl('custom-theme-kana').value,editId=form.dataset.editId;
+  if(!name){message.textContent='元テーマ・病名を入力してください。';return;}
+  const themes=loadCustomThemes();
+  if(allClinicThemes().some(theme=>theme.name.trim()===name&&theme.id!==editId)){message.textContent='同じ元テーマ・病名がすでに登録されています';return;}
+  if(editId){const target=themes.find(theme=>theme.id===editId);if(!target)return;target.kana=kana;target.name=name;}else{const maxNo=Math.max(100,...themes.map(theme=>theme.no));themes.push({id:`custom-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,no:maxNo+1,kana,name});}
+  saveCustomThemes(themes);closeCustomThemeForm();renderClinicThemeList();
+}
+function editCustomTheme(id){const theme=loadCustomThemes().find(item=>item.id===id);if(theme)openCustomThemeForm(theme);}
+function deleteCustomTheme(id){const theme=loadCustomThemes().find(item=>item.id===id);if(!theme||!confirm('この元テーマ・病名を削除しますか？'))return;saveCustomThemes(loadCustomThemes().filter(item=>item.id!==id));renderClinicThemeList();}
+function renderTitleHistory(){
+  const query=(document.getElementById('title-history-search')?.value||'').trim().toLocaleLowerCase();
+  const results=document.getElementById('title-history-results');
+  if(!results)return;
+  const history=allPostTitles().filter(item=>item.title.toLocaleLowerCase().includes(query));
+  results.innerHTML=history.length?history.map(item=>`<article class="title-history-item"><button type="button" class="title-history-select" data-history-title="${esc(item.title)}"><span>${item.fixed?'過去投稿済み':new Date(item.createdAt).toLocaleDateString('ja-JP')}</span>${esc(item.title)}</button>${item.fixed?'':`<button type="button" class="title-history-delete" data-delete-history-title="${esc(item.id)}">削除</button>`}</article>`).join(''):'<p class="clinic-theme-empty">該当する投稿タイトルがありません</p>';
+}
+function openTitleHistoryPicker(){const picker=document.getElementById('title-history-picker');picker.hidden=false;renderTitleHistory();document.getElementById('title-history-search').focus();}
+function closeTitleHistoryPicker(){document.getElementById('title-history-picker').hidden=true;}
+function selectHistoryTitle(title){const input=$('theme');input.value=title;input.dispatchEvent(new Event('input',{bubbles:true}));closeTitleHistoryPicker();input.scrollIntoView({behavior:'smooth',block:'center'});}
+function deleteHistoryTitle(id){if(!confirm('この投稿タイトルを一覧から削除しますか？'))return;saveTitleHistory(loadTitleHistory().filter(item=>item.id!==id));renderTitleHistory();}
+function migrateSavedClinicTitle(){
+  if(localStorage.getItem(TITLE_HISTORY_STORAGE_KEY)!==null)return;
+  let saved={};try{saved=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');}catch(_){}
+  const title=typeof saved.title==='string'?saved.title:'';
+  if(title.trim())addTitleToHistory(title);
+  else saveTitleHistory([]);
+}
 function renderClinic(){
   clinicEl('clinicWorkflow').innerHTML=clinicSteps.map(([name,desc],i)=>{const n=i+1;let extra='';
-    if(n===1)extra='<div class="answer-field"><label>元テーマ・病名<input id="clinic-theme" data-clinic-save placeholder="例：甲状腺機能低下症に伴う自律神経症状"></label></div>';
+    if(n===1)extra='<div class="answer-field"><label>元テーマ・病名<input id="clinic-theme" data-clinic-save placeholder="例：甲状腺機能低下症に伴う自律神経症状"></label><button type="button" class="clinic-theme-picker-button" id="openClinicThemePicker">元テーマ・病名一覧から選ぶ</button><section class="clinic-theme-picker" id="clinic-theme-picker" hidden aria-label="元テーマ・病名一覧"><div class="clinic-theme-picker-head"><strong>元テーマ・病名一覧</strong><button type="button" class="secondary clinic-theme-close" id="closeClinicThemePicker">一覧を閉じる</button></div><input id="clinic-theme-search" type="search" placeholder="病名・症状名を検索" aria-label="病名・症状名を検索"><div class="clinic-kana-filters" aria-label="五十音で絞り込み">'+['すべて','あ行','か行','さ行','た行','な行','は行','ま行','や行','ら行'].map(kana=>`<button type="button" data-clinic-kana="${kana}">${kana}</button>`).join('')+'</div><div class="clinic-theme-results" id="clinic-theme-results" aria-live="polite"></div></section></div>';
     if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><p class="hint">STEP1の回答はプロンプトに自動で反映されます。</p></div>';
-    return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div><div class="answer-field"><label>ChatGPTの回答を貼り付ける欄<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="ChatGPTの回答をここに貼り付け"></textarea></label><button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div></div></details>`;
+    const answerField=n===3?'<p class="hint">画像を作成したら、WordPressでアイキャッチ画像に設定して完了です。</p>':`<div class="answer-field"><label>ChatGPTの回答を貼り付ける欄<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="ChatGPTの回答をここに貼り付け"></textarea></label><button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
+    return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div>${answerField}</div></details>`;
   }).join('');
 }
 function clinicUpdate(){
@@ -66,14 +163,41 @@ function clinicUpdate(){
   clinicPrompt(3).value=step3Warning?'':`あなたは「うえむら整体院」の自律神経ブログのデザイナーです。以下の記事用に、アイキャッチ画像を1枚作成してください。\n\n【投稿タイトル】\n${title}\n\n【記事一式】\n${answer2}\n\n【画像の条件】\n・ブログに使いやすい横長16:9\n・文字入れなし、図解なし、コラージュ・分割画面なし\n・記事内容が自然に伝わる人物と背景だけのシンプルな1場面\n・30〜50代の日本人を基本に、清潔感と安心感のある自然な雰囲気\n・症状や苦痛を大げさに表現しない\n・過度に医療的な機器を強調しない`;
   clinicStatus(1,!!clinicValue('clinic-step1-answer'));
   clinicStatus(2,!!answer2);
-  clinicStatus(3,!!clinicValue('clinic-step3-answer'));
+  clinicStatus(3,false,'画像を作成');
 }
-function clinicSave(show=false){const data={theme:clinicEl('clinic-theme')?.value||'',title:clinicEl('clinic-title')?.value||'',answers:{1:clinicEl('clinic-step1-answer')?.value||'',2:clinicEl('clinic-step2-answer')?.value||'',3:clinicEl('clinic-step3-answer')?.value||''}};localStorage.setItem(CLINIC_STORAGE_KEY,JSON.stringify(data));if(show)clinicEl('clinicSaveMessage').textContent='うえむら整体院HPブログの内容をこの端末に保存しました。';}
+function clinicSave(show=false){let previous={};try{previous=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');}catch(_){}const data={theme:clinicEl('clinic-theme')?.value||'',title:clinicEl('clinic-title')?.value||'',answers:{1:clinicEl('clinic-step1-answer')?.value||'',2:clinicEl('clinic-step2-answer')?.value||'',3:previous.answers?.[3]||''}};localStorage.setItem(CLINIC_STORAGE_KEY,JSON.stringify(data));if(show)clinicEl('clinicSaveMessage').textContent='うえむら整体院HPブログの内容をこの端末に保存しました。';}
 function clinicLoad(){try{const d=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');if(clinicEl('clinic-theme'))clinicEl('clinic-theme').value=d.theme||'';if(clinicEl('clinic-title'))clinicEl('clinic-title').value=d.title||'';Object.entries(d.answers||{}).forEach(([n,v])=>clinicAnswer(n).value=v||'');}catch(_){}}
 function showBlog(kind){const director=kind==='director';clinicEl('directorBlog').hidden=!director;clinicEl('clinicBlog').hidden=director;document.querySelectorAll('.blog-switch').forEach(b=>{const active=b.dataset.blog===kind;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',active);});localStorage.setItem('totto-blog-assistant-active-blog',kind);}
 
-renderClinic();clinicLoad();clinicUpdate();
+renderClinic();clinicLoad();migrateSavedClinicTitle();clinicUpdate();renderLastCreatedPost();
 document.querySelectorAll('.blog-switch').forEach(b=>b.addEventListener('click',()=>showBlog(b.dataset.blog)));
 showBlog(localStorage.getItem('totto-blog-assistant-active-blog')||'director');
 document.addEventListener('input',e=>{if(!e.target.matches('[data-clinic-save]'))return;clinicUpdate();clinicSave();});
-document.addEventListener('click',e=>{const copyId=e.target.dataset.clinicCopy;if(copyId)copy(copyId,e.target.dataset.clinicMessage);const n=e.target.dataset.clinicAnswerSave;if(n){clinicSave();clinicEl(`clinic-answer-message-${n}`).textContent='回答を保存しました。';}if(e.target.id==='clinicSaveNow')clinicSave(true);if(e.target.id==='clinicClearAll'&&confirm('うえむら整体院HPブログの保存内容をすべて消去しますか？')){localStorage.removeItem(CLINIC_STORAGE_KEY);location.reload();}});
+document.addEventListener('click',e=>{const copyId=e.target.dataset.clinicCopy;if(copyId)copy(copyId,e.target.dataset.clinicMessage);const n=e.target.dataset.clinicAnswerSave;if(n){clinicSave();if(n==='2'&&clinicValue('clinic-step2-answer'))saveLastCreatedPost();clinicEl(`clinic-answer-message-${n}`).textContent='回答を保存しました。';}if(e.target.id==='clinicSaveNow')clinicSave(true);if(e.target.id==='clinicClearAll'&&confirm('うえむら整体院HPブログの保存内容をすべて消去しますか？')){localStorage.removeItem(CLINIC_STORAGE_KEY);location.reload();}});
+document.addEventListener('input',e=>{if(e.target.id==='clinic-theme-search')renderClinicThemeList();});
+document.addEventListener('click',e=>{
+  if(e.target.id==='openClinicThemePicker')openClinicThemePicker();
+  if(e.target.id==='closeClinicThemePicker')closeClinicThemePicker();
+  const kanaButton=e.target.closest('[data-clinic-kana]');
+  if(kanaButton){clinicThemeKana=kanaButton.dataset.clinicKana;renderClinicThemeList();}
+  const themeButton=e.target.closest('[data-clinic-theme-name]');
+  if(themeButton)selectClinicTheme(themeButton.dataset.clinicThemeName);
+  if(e.target.id==='openCustomThemeForm')openCustomThemeForm();
+  if(e.target.id==='cancelCustomTheme')closeCustomThemeForm();
+  if(e.target.id==='saveCustomTheme')saveCustomThemeFromForm();
+  const editButton=e.target.closest('[data-edit-custom-theme]');
+  if(editButton)editCustomTheme(editButton.dataset.editCustomTheme);
+  const deleteButton=e.target.closest('[data-delete-custom-theme]');
+  if(deleteButton)deleteCustomTheme(deleteButton.dataset.deleteCustomTheme);
+});
+document.addEventListener('click',e=>{
+  const answerSave=e.target.dataset.clinicAnswerSave;
+  if(answerSave==='2'||e.target.id==='clinicSaveNow')addTitleToHistory(clinicValue('clinic-title'));
+  if(e.target.id==='openTitleHistoryPicker')openTitleHistoryPicker();
+  if(e.target.id==='closeTitleHistoryPicker')closeTitleHistoryPicker();
+  const titleButton=e.target.closest('[data-history-title]');
+  if(titleButton)selectHistoryTitle(titleButton.dataset.historyTitle);
+  const deleteButton=e.target.closest('[data-delete-history-title]');
+  if(deleteButton)deleteHistoryTitle(deleteButton.dataset.deleteHistoryTitle);
+});
+document.addEventListener('input',e=>{if(e.target.id==='title-history-search')renderTitleHistory();});
