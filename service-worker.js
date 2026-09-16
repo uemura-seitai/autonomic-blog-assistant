@@ -1,4 +1,4 @@
-const CACHE_NAME = 'autonomic-blog-assistant-v2';
+const CACHE_NAME = 'autonomic-blog-assistant-v3';
 const APP_FILES = ['./', './index.html', './style.css', './script.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', event => {
