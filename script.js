@@ -70,7 +70,7 @@ function saveLastCreatedPost(){const title=clinicValue('clinic-title'),theme=cli
 const clinicSteps=[
   ['おすすめタイトル作成','元テーマ・病名から、投稿タイトルとSEOタイトルを作成します。'],
   ['記事一式作成','採用タイトルをもとに、WordPressに必要な記事一式を作成します。'],
-  ['アイキャッチ画像作成','完成記事に合う、横長のアイキャッチ画像を作成します。']
+  ['画像生成プロンプト作成','完成記事から、アイキャッチ1枚と各H2直下用の画像プロンプトを作成します。']
 ];
 const clinicEl=id=>document.getElementById(id);
 const clinicValue=id=>clinicEl(id)?.value.trim()||'';
@@ -80,6 +80,86 @@ function clinicPrompt(n){ return clinicEl(`clinic-step${n}-prompt`); }
 function clinicAnswer(n){ return clinicEl(`clinic-step${n}-answer`); }
 function clinicStatus(n,done,label){const e=clinicEl(`clinic-status-${n}`);if(!e)return;e.textContent=`状態：${label||(done?'回答貼り付け済み':'未作成')}`;e.classList.toggle('is-done',done);}
 function clinicNotice(n,text=''){const e=clinicEl(`clinic-warning-${n}`);if(e)e.textContent=text;}
+
+// STEP3: 記事構造の解析、画像種別の判定、重複しない場面の選定を分離する。
+function clinicPlainText(html){return String(html||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ').trim();}
+function clinicIsSummaryHeading(heading){return /(?:^|記事の)(?:まとめ)|最後に|おわりに/u.test(String(heading||'').replace(/[\s　]/g,''));}
+function clinicParseArticleHtml(html){
+  const source=String(html||'');
+  const headingPattern=/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi;
+  const matches=[...source.matchAll(headingPattern)];
+  const intro=clinicPlainText(source.slice(0,matches[0]?.index||source.length));
+  const articleTitle=clinicPlainText((source.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)||[])[1]||'');
+  return {intro,theme:articleTitle||intro.slice(0,120),headings:matches.map((match,index)=>{
+    const title=clinicPlainText(match[1]);
+    const body=clinicPlainText(source.slice(match.index+match[0].length,matches[index+1]?.index||source.length));
+    return {title,body};
+  }).filter(item=>item.title&&!clinicIsSummaryHeading(item.title))};
+}
+function clinicClassifyHeading(heading,body=''){
+  const text=`${heading} ${body}`;
+  if(/病院|受診|相談|医療機関|受診の目安|救急/u.test(text))return 'consultation';
+  if(/改善|対策|セルフケア|生活習慣|予防|ケア|整える|できること/u.test(text))return 'care';
+  if(/原因|自律神経|関係|理由|仕組み|なぜ|ストレス|生活リズム/u.test(text))return 'cause';
+  if(/危険|見分け|判断|チェック|症状|状態|気づき/u.test(text))return 'caution';
+  if(/とは|違い|概要|特徴/u.test(text))return 'awareness';
+  return 'awareness';
+}
+const CLINIC_SCENE_CANDIDATES={
+  eyecatch:[
+    {summary:'リビングで体調ノートを見直す',location:'明るいリビング',action:'手首にそっと触れながら体調ノートを見直している',gaze:'ノートに穏やかに視線を向ける',prop:'湯気の立つ白湯と小さな卓上カレンダー',posture:'ソファに自然に腰掛けた姿勢',composition:'人物とテーブルが入る横長のミディアムショット',message:'記事全体の悩みを落ち着いて見直し、原因を知って整える方向へ進む印象'},
+    {summary:'書斎で生活リズムを確認する',location:'明るい自宅の書斎',action:'一日の予定を書いたノートを開いて生活リズムを確認している',gaze:'机上の予定表を見る',prop:'眼鏡と温かい飲み物',posture:'デスクチェアに背筋を自然に伸ばして座る',composition:'窓からの光を含む斜め前方の横長構図',message:'体調の気づきから生活を整えるまでの記事全体像'}
+  ],
+  awareness:[
+    {summary:'洗面台の鏡で顔色を確認する',location:'清潔で明るい洗面スペース',action:'鏡を見ながら自分の顔色や体調の変化に静かに気づいている',gaze:'鏡の中の自分を見る',prop:'洗面台の小さなタオル',posture:'洗面台の前に自然に立つ',composition:'鏡越しの上半身を一人だけ写す横長構図',message:'症状や変化に早めに気づく日常の場面'},
+    {summary:'ダイニングで脈を確かめる',location:'朝のダイニングテーブル',action:'片方の手首に指を当てて脈や違和感を穏やかに確かめている',gaze:'自分の手元を見る',prop:'読みかけの健康ノート',posture:'椅子に浅く自然に座る',composition:'テーブル越しに手元も分かる横長構図',message:'体の状態を自分で確認する気づきの場面'}
+  ],
+  cause:[
+    {summary:'窓辺で深呼吸する',location:'朝のやわらかな光が入る窓辺',action:'ゆっくり深呼吸して呼吸と緊張を整えている',gaze:'窓の外の遠くを見る',prop:'窓際の観葉植物',posture:'椅子に楽に座り肩の力を抜く',composition:'横からの余白がある横長構図',message:'緊張、呼吸、休息、生活リズムとの関係'},
+    {summary:'寝室で就寝前の休息を整える',location:'整頓された寝室',action:'就寝前に照明を落として静かな休息時間を整えている',gaze:'ベッドサイドの本へ穏やかに向ける',prop:'ベッドサイドの小さな読書灯と本',posture:'ベッドの端に腰掛ける',composition:'寝室の落ち着いた空気が伝わる横長構図',message:'休息と生活リズムが身体の反応に関わる印象'}
+  ],
+  caution:[
+    {summary:'デスクで症状記録を確認する',location:'日中の明るいワークスペース',action:'体調の変化を記録したメモを慎重に読み返している',gaze:'記録メモを見る',prop:'ペンと一冊のノート',posture:'椅子に安定して座る',composition:'手元と穏やかな表情が分かる横長構図',message:'不調を大げさにせず、変化を記録して判断する場面'},
+    {summary:'ソファで軽い不調に気づく',location:'日差しの入るリビング',action:'ソファで一度休み、軽いだるさやめまいに気づいている',gaze:'少し離れた窓の方を見る',prop:'サイドテーブルの水の入ったグラス',posture:'背もたれに寄りかからず安定して座る',composition:'安心感のある引き気味の横長構図',message:'強い苦痛を見せずに体調変化へ注意を向ける場面'}
+  ],
+  care:[
+    {summary:'朝のストレッチをする',location:'朝の明るいリビングの床',action:'軽いストレッチで身体をゆっくりほぐしている',gaze:'伸ばした手の先を見る',prop:'ヨガマット',posture:'無理のない立位ストレッチ',composition:'全身の動きが分かる横長構図',message:'前向きなセルフケアと生活習慣を整える場面'},
+    {summary:'玄関で散歩の準備をする',location:'明るく整った玄関',action:'散歩へ出る前に靴ひもを結んでいる',gaze:'足元を見る',prop:'歩きやすいスニーカーと小さな布製バッグ',posture:'玄関ベンチに腰掛ける',composition:'行動が分かる斜め横からの横長構図',message:'無理なく日常に取り入れる予防・生活習慣の場面'},
+    {summary:'キッチンで白湯を用意する',location:'清潔な朝のキッチン',action:'マグカップに白湯を注いで休息の準備をしている',gaze:'手元のマグカップを見る',prop:'シンプルなマグカップ',posture:'キッチンカウンターの前に立つ',composition:'手元と明るいキッチンが見える横長構図',message:'日常の小さなセルフケアを続ける場面'}
+  ],
+  consultation:[
+    {summary:'受診メモと保険証を準備する',location:'明るい自宅のダイニング',action:'症状の記録メモと保険証をそろえて相談の準備をしている',gaze:'テーブル上のメモを見る',prop:'保険証ケース、ペン、症状記録ノート',posture:'テーブルに落ち着いて座る',composition:'相談準備が明確に伝わる手元中心の横長構図',message:'受診や相談の目安を落ち着いて確認する場面'},
+    {summary:'穏やかなクリニック待合で相談を待つ',location:'明るく清潔なクリニックの待合',action:'受付後に相談メモを手にして順番を静かに待っている',gaze:'手元のメモへ向ける',prop:'小さな相談メモ',posture:'待合椅子に自然に座る',composition:'医療機器を写さない、人物中心の横長構図',message:'必要なときに専門家へ相談する安心感のある場面'}
+  ]
+};
+function clinicChooseScene(kind,used){
+  const candidates=[...(CLINIC_SCENE_CANDIDATES[kind]||[]),...Object.values(CLINIC_SCENE_CANDIDATES).flat()];
+  const scene=candidates.map((item,index)=>({item,index,score:['location','action','gaze','prop','posture','composition','summary'].filter(key=>used[key].has(item[key])).length})).sort((a,b)=>a.score-b.score||a.index-b.index)[0].item;
+  ['location','action','gaze','prop','posture','composition','summary'].forEach(key=>used[key].add(scene[key]));
+  return scene;
+}
+const CLINIC_IMAGE_COMMON_CONDITIONS='文字入れなし。図解なし。医療説明イラストなし。コラージュ禁止。分割画面禁止。4分割禁止。横並び禁止。縦並び禁止。1枚につき1場面だけ。複数画像を1枚にまとめることは禁止。過度に医療的な機器を強調しない。人物と背景だけのシンプルな画像。安心感のある自然な雰囲気。ブログに使いやすい横長16:9。30〜50代の日本人女性を基本にする。清潔感のある明るい室内を基本にする。症状を大げさに表現しない。不安や苦痛を強調しすぎない。一目見て内容が分かる自然な場面にする。';
+const CLINIC_IMAGE_SAFETY_CONDITIONS='自傷行為を連想させる表現は禁止。自殺を連想させる表現は禁止。倒れ込み・絶望・強い希死念慮を想起させる演出は禁止。血液、刃物、薬の大量配置、ひも、浴室での危険な演出などは禁止。失神直前・救急搬送のような強い危険演出は禁止。うつむいて極端に落ち込むだけの画は避ける。不調を扱う場合も、安全で穏やかな日常の範囲に留める。';
+function clinicBuildImagePrompt({role,heading,kind,scene,theme}){
+  const roleText=role==='eyecatch'?'これは記事全体に使うアイキャッチ画像です。':`これはH2「${heading}」直下に使う画像です。`;
+  const purpose=role==='eyecatch'?`「${theme}」について、${scene.message}を自然に伝える画像にしてください。`:scene.message+'を自然に伝える画像にしてください。';
+  return `${roleText}\n\n${purpose}\n\n30〜50代の日本人女性が、${scene.location}で、${scene.action}様子。${scene.gaze}。${scene.prop}を自然に置き、${scene.posture}にしてください。${scene.composition}。\n\n【共通条件】\n${CLINIC_IMAGE_COMMON_CONDITIONS}\n\n【安全条件】\n${CLINIC_IMAGE_SAFETY_CONDITIONS}`;
+}
+function clinicBuildImagePrompts(articleHtml,theme){
+  const article=clinicParseArticleHtml(articleHtml),used={location:new Set(),action:new Set(),gaze:new Set(),prop:new Set(),posture:new Set(),composition:new Set(),summary:new Set()};
+  const eyeScene=clinicChooseScene('eyecatch',used);
+  const articleTheme=theme||article.theme||'この記事';
+  return [{label:'アイキャッチ画像',heading:'記事全体',scene:eyeScene.summary,prompt:clinicBuildImagePrompt({role:'eyecatch',kind:'eyecatch',scene:eyeScene,theme:articleTheme})},...article.headings.map((item,index)=>{
+    const kind=clinicClassifyHeading(item.title,item.body),scene=clinicChooseScene(kind,used);
+    return {label:`画像${['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'][index]||index+1}`,heading:item.title,scene:scene.summary,prompt:clinicBuildImagePrompt({role:'heading',heading:item.title,kind,scene,theme})};
+  })];
+}
+function renderClinicImagePrompts(articleHtml,theme){
+  const container=clinicEl('clinic-image-prompts');
+  if(!container)return;
+  const items=clinicBuildImagePrompts(articleHtml,theme);
+  container.innerHTML=`<h3>画像生成プロンプト一覧</h3><p class="hint">アイキャッチと各H2に対応する画像を、1枚ずつ個別に生成してください。「まとめ」は対象外です。</p>${items.map((item,index)=>`<section class="clinic-image-prompt-card"><h4>${esc(item.label)}${index?`：H2「${esc(item.heading)}」直下`:''}</h4><p class="clinic-image-scene">想定シチュエーション：${esc(item.scene)}</p><label>${esc(item.label)}用プロンプト<textarea class="prompt-textarea clinic-image-prompt" id="clinic-image-prompt-${index}" readonly>${esc(item.prompt)}</textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-image-prompt-${index}" data-clinic-message="clinic-image-copy-${index}">このプロンプトをコピー</button><p class="field-message" id="clinic-image-copy-${index}" aria-live="polite"></p></section>`).join('')}`;
+}
 let clinicThemeKana='すべて';
 function renderClinicThemeList(){
   const query=(clinicEl('clinic-theme-search')?.value||'').trim().toLocaleLowerCase();
@@ -150,8 +230,9 @@ function renderClinic(){
   clinicEl('clinicWorkflow').innerHTML=clinicSteps.map(([name,desc],i)=>{const n=i+1;let extra='';
     if(n===1)extra='<div class="answer-field"><label>元テーマ・病名<input id="clinic-theme" data-clinic-save placeholder="例：甲状腺機能低下症に伴う自律神経症状"></label><button type="button" class="clinic-theme-picker-button" id="openClinicThemePicker">元テーマ・病名一覧から選ぶ</button><section class="clinic-theme-picker" id="clinic-theme-picker" hidden aria-label="元テーマ・病名一覧"><div class="clinic-theme-picker-head"><strong>元テーマ・病名一覧</strong><button type="button" class="secondary clinic-theme-close" id="closeClinicThemePicker">一覧を閉じる</button></div><input id="clinic-theme-search" type="search" placeholder="病名・症状名を検索" aria-label="病名・症状名を検索"><div class="clinic-kana-filters" aria-label="五十音で絞り込み">'+['すべて','あ行','か行','さ行','た行','な行','は行','ま行','や行','ら行'].map(kana=>`<button type="button" data-clinic-kana="${kana}">${kana}</button>`).join('')+'</div><div class="clinic-theme-results" id="clinic-theme-results" aria-live="polite"></div></section></div>';
     if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><button type="button" class="copy-button" data-clinic-copy="clinic-title" data-clinic-message="clinic-title-copy-message">コピー</button><p class="field-message" id="clinic-title-copy-message" aria-live="polite"></p><p class="hint">STEP1の回答はプロンプトに自動で反映されます。</p></div>';
-    const answerField=n===3?'<p class="hint">画像を作成したら、WordPressでアイキャッチ画像に設定して完了です。</p>':`<div class="answer-field"><label>${n===2?'ChatGPTの記事本文HTMLを貼り付ける欄':'ChatGPTの回答を貼り付ける欄'}<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="${n===2?'ChatGPTから返ってきた記事本文HTMLだけをここに貼り付け':'ChatGPTの回答をここに貼り付け'}"></textarea></label><button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
-    return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div>${answerField}</div></details>`;
+    const answerField=n===3?'<p class="hint">各カードのプロンプトをコピーし、画像は必ず1枚ずつ別々に生成してください。</p>':`<div class="answer-field"><label>${n===2?'ChatGPTの記事本文HTMLを貼り付ける欄':'ChatGPTの回答を貼り付ける欄'}<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="${n===2?'ChatGPTから返ってきた記事本文HTMLだけをここに貼り付け':'ChatGPTの回答をここに貼り付け'}"></textarea></label><button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
+    const promptField=n===3?'<div id="clinic-image-prompts" aria-live="polite"></div>':`<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div>`;
+    return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}${promptField}${answerField}</div></details>`;
   }).join('');
 }
 function clinicUpdate(){
@@ -165,13 +246,14 @@ function clinicUpdate(){
   clinicPrompt(2).value=step2Warning?'':`あなたは「うえむら整体院」の自律神経ブログを作成するプロのWebライターです。医学的正確性を最優先し、一般の患者さんにわかりやすい記事を作成してください。\n\n【STEP1のタイトル候補・回答】\n${answer1}\n\n【最終的に採用した投稿タイトル】\n${title}\n\n以下を必ず、順番を一切変えずに作成してください。各項目の内容は必ず個別のコードブロックに入れてください。説明文や項目の追加は不要です。\n\n### パーマリンク\n\`\`\`text\n英小文字・ハイフン形式。\n\`\`\`\n\n### カテゴリ\n\`\`\`text\n次の12種類から必ず1つだけ選ぶ。新しいカテゴリは作らない。\n1. ホルモン・代謝・婦人科\n2. めまい・耳の症状\n3. 全身性・その他の自律神経症状\n4. 冷え・ほてり・汗・むくみ\n5. 動悸・血圧・失神\n6. 呼吸・胸の症状\n7. 排尿・泌尿器の悩み\n8. 疲労・ストレス・不安\n9. 睡眠の悩み\n10. 神経疾患に伴う自律神経障害\n11. 胃腸・お腹の不調\n12. 頭痛・目・のどの症状\n\`\`\`\n\n### タグ\n\`\`\`text\nWordPress用タグをカンマ区切りで。\n\`\`\`\n\n### 記事本文\n\`\`\`html\n<article style="max-width:780px;margin:0 auto;color:#222;font-size:16px;line-height:2.2;">\n…\n</article>\n\`\`\`\n\n### メタディスクリプション\n\`\`\`text\n記事内容を簡潔に説明し、投稿タイトル・主要キーワードを自然に含める。SEOキーワードを不自然に羅列しない。\n\`\`\`\n\n### フォーカスキーフレーズ\n\`\`\`text\n記事内容・検索意図・SEOに最も適したものを1つだけ。投稿タイトルと同一でなくてよい。\n\`\`\`\n\n【記事本文HTMLの必須要件】\n・2026年9月に作成した「耳管開放症」の記事構成・説明量を基準にし、簡略化しない。読者が「なぜその症状が起こるのか」を理解できる内容にする。\n・WordPress投稿タイトルと、記事冒頭のSEOタイトルは分ける。最初のH2は <h2 style="margin:2.5em 0 1em;line-height:1.6;"><strong>SEOタイトル</strong></h2> とし、病名／症状、代表的な悩み、自律神経との関係を自然に含める。\n・次のH2は <h2 style="margin:2.5em 0 1em;"><strong>この記事でわかること</strong></h2>。単なる箇条書きにせず、「何もしていないのに心臓がドキドキする」「以前より汗をかきやすくなった」などテーマに合う具体症状から始め、病気／症状の概要、身体で起きていること、自律神経との関係、記事で説明する内容まで説明する。\n・目次は危険レベルと受診の目安、症状チェック、原因と自律神経との関係、自宅でできる生活ケア、うえむら整体院でできること、まとめへリンクする。各H2のidは順に risk、check、cause、care、clinic、summary を使う。\n・「危険レベルと受診の目安」はテーマに応じて危険レベル（例：●●〇〇〇）を示し、原則3段階程度で説明する。各ボックスに必ず「状態：」「目安：」「行動：」を含め、重大な病気を自律神経の乱れとして片付けない。\n・「症状チェック」は10項目前後の <ul style="line-height:2.2;"> を使う。チェックリスト後に、特徴的な症状、他の病気との違い、症状だけでは診断できないことを説明する。\n・「原因と自律神経との関係」は中心部分として複数のH3を使う。「そもそも○○とは？」「身体では何が起こっている？」「原因1〜3」「なぜ○○が起こるの？」「自律神経とはどのような関係がある？」「ストレスとの関係」「どのように診断するの？」など、患者さんが抱きやすい疑問をテーマに合わせて使う。\n・医学的な病態がある疾患を何でも自律神経の乱れが原因とは説明しない。「自律神経の乱れが原因です」「自律神経を整えれば治ります」「整体で治ります」と断定しない。疾患そのものの医学的原因・病態を先に説明し、自律神経との関係は分けて説明する。必要に応じて「自律神経が乱れたことが○○の直接的な原因という意味ではありません」「この症状だけで○○と判断することはできません」「ほかの疾患でも同様の症状が起こることがあります」を入れる。\n・「自宅でできる生活ケア」は、医療機関で診断・治療が必要な疾患なら最初にそれを説明する。その後、テーマに合う具体的な生活ケアを8〜10項目程度示し、睡眠・食事・運動だけの一般論にしない。\n・「うえむら整体院でできること」の施設名は必ず「うえむら整体院」。病気そのものを診断・治療できる表現はしない。「○○は医療機関で診断・治療を受ける必要がある病気です」「うえむら整体院で○○そのものを診断・治療することはできません」を必要に応じて明記する。その上で睡眠、疲労、呼吸、姿勢、身体の緊張など身体面を確認することを書く。自然に合う場合は「自律神経が働きやすく、夜に深く眠り、一晩寝たらしっかり回復できる身体づくりをサポートします。」を使うが、「自律神経を整えれば○○が治るという意味ではありません」と線引きする。\n・「まとめ」は、どんな病気／症状か、代表的症状、主な原因や仕組み、自律神経との関係、受診すべきケースを簡潔に振り返り、読者が次に何をすればよいか分かる文章で終える。`;
   const step3Warning=!answer2?'STEP2の記事本文HTMLを貼り付けてください。':!title?'採用タイトルを入力してください。':'';
   clinicNotice(3,step3Warning);
-  clinicPrompt(3).value=step3Warning?'':`あなたは「うえむら整体院」の自律神経ブログのデザイナーです。以下の記事用に、アイキャッチ画像を1枚作成してください。\n\n【投稿タイトル】\n${title}\n\n【記事本文HTML】\n${answer2}\n\n【画像の条件】\n・ブログに使いやすい横長16:9\n・文字入れなし、図解なし、コラージュ・分割画面なし\n・記事内容が自然に伝わる人物と背景だけのシンプルな1場面\n・30〜50代の日本人を基本に、清潔感と安心感のある自然な雰囲気\n・症状や苦痛を大げさに表現しない\n・過度に医療的な機器を強調しない`;
+  if(step3Warning){const imagePrompts=clinicEl('clinic-image-prompts');if(imagePrompts)imagePrompts.innerHTML='';}
+  else renderClinicImagePrompts(answer2,title||theme);
   clinicStatus(1,!!clinicValue('clinic-step1-answer'));
   clinicStatus(2,!!answer2);
-  clinicStatus(3,false,'画像を作成');
+  clinicStatus(3,!step3Warning,step3Warning?'画像プロンプト未作成':'画像プロンプト作成済み');
 }
 function clinicSave(show=false){let previous={};try{previous=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');}catch(_){}const data={theme:clinicEl('clinic-theme')?.value||'',title:clinicEl('clinic-title')?.value||'',answers:{1:clinicEl('clinic-step1-answer')?.value||'',2:clinicEl('clinic-step2-answer')?.value||'',3:previous.answers?.[3]||''}};localStorage.setItem(CLINIC_STORAGE_KEY,JSON.stringify(data));if(show)clinicEl('clinicSaveMessage').textContent='うえむら整体院HPブログの内容をこの端末に保存しました。';}
-function clinicLoad(){try{const d=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');if(clinicEl('clinic-theme'))clinicEl('clinic-theme').value=d.theme||'';if(clinicEl('clinic-title'))clinicEl('clinic-title').value=d.title||'';Object.entries(d.answers||{}).forEach(([n,v])=>clinicAnswer(n).value=v||'');}catch(_){}}
+function clinicLoad(){try{const d=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');if(clinicEl('clinic-theme'))clinicEl('clinic-theme').value=d.theme||'';if(clinicEl('clinic-title'))clinicEl('clinic-title').value=d.title||'';Object.entries(d.answers||{}).forEach(([n,v])=>{const answer=clinicAnswer(n);if(answer)answer.value=v||'';});}catch(_){}}
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
 function workLinkMarkup(links,type,label){const mobile=isIOS(),href=mobile?links[`${type}IOS`]:links[type],attributes=mobile?'':' target="_blank" rel="noopener noreferrer"';return `<a class="blog-quick-link" href="${href}"${attributes}>${label}</a>`;}
 function renderBlogQuickLinks(kind){const links=BLOG_LINKS[kind],container=clinicEl('blogQuickLinks');if(!links||!container)return;container.innerHTML=`<a class="blog-quick-link" href="${links.blog}" target="_blank" rel="noopener noreferrer">ブログを見る</a>${workLinkMarkup(links,'chatgpt','ChatGPT')}${workLinkMarkup(links,'wordpress','WordPress')}`;}

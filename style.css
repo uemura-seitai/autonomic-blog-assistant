@@ -41,6 +41,11 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .prompt-field, .answer-field, .url-field { margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:10px; }
 .prompt-field label, .answer-field label, .url-field label { margin-top:0; }
 .answer-field { background:#fffdf7; }
+.clinic-image-prompt-card { margin-top:14px; padding:12px; border:1px solid #b8d3cd; border-radius:10px; background:#f7fbf9; }
+.clinic-image-prompt-card h4 { margin:0; color:var(--green); font-size:1rem; line-height:1.5; }
+.clinic-image-prompt-card label { margin-top:10px; }
+.clinic-image-prompt { min-height:330px; background:#fff; }
+.clinic-image-scene { margin:6px 0 0; color:var(--muted); font-size:.88rem; font-weight:700; }
 .last-created-post { padding:13px 14px; }
 .last-created-post h3 { color:var(--green); font-size:.9rem; }
 .last-created-post-title { margin:5px 0 7px; font-size:1.2rem; line-height:1.45; }
