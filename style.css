@@ -37,6 +37,7 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .step-body { padding:0 14px 16px; border-top:1px solid var(--line); }
 .settings { margin-top:14px; border-top:1px solid var(--line); } .settings summary { padding:13px 0 2px; color:var(--green); cursor:pointer; font-size:.92rem; font-weight:700; } .settings-body { padding-bottom:2px; }
 .hint { margin:10px 0 0; color:var(--muted); font-size:.9rem; } .message, .field-message { min-height:1.4em; margin:8px 0 0; color:var(--green); font-size:.9rem; font-weight:700; }
+.article-length { min-height:1.4em; margin:8px 0 0; font-size:.9rem; font-weight:700; } .article-length.is-good { color:#247259; } .article-length.is-warning { color:#9a5b34; }
 .step-warning { margin:10px 0 0; color:#9a5b34; font-size:.9rem; font-weight:700; } .step-warning:empty { display:none; }
 .prompt-field, .answer-field, .url-field { margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:10px; }
 .prompt-field label, .answer-field label, .url-field label { margin-top:0; }
