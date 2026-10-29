@@ -81,8 +81,52 @@ function clinicAnswer(n){ return clinicEl(`clinic-step${n}-answer`); }
 function clinicStatus(n,done,label){const e=clinicEl(`clinic-status-${n}`);if(!e)return;e.textContent=`状態：${label||(done?'回答貼り付け済み':'未作成')}`;e.classList.toggle('is-done',done);}
 function clinicNotice(n,text=''){const e=clinicEl(`clinic-warning-${n}`);if(e)e.textContent=text;}
 
+const CLINIC_WP_API='https://uemura-seitaiin.com/wp-json/wp/v2';
+const CLINIC_GENERIC_RELATED_TAGS=new Set(['自律神経','ストレス','不安','疲労','睡眠','健康','整体','生活習慣','セルフケア']);
+function clinicNormalizeRelatedText(value){return String(value||'').replace(/[\s　]/g,'').toLocaleLowerCase();}
+function clinicRelatedTagsFromText(value){const unique=new Map();String(value||'').replace(/<[^>]*>/g,' ').split(/[,，、\n]/).map(tag=>tag.trim()).filter(Boolean).forEach(tag=>{const key=clinicNormalizeRelatedText(tag);if(key&&!unique.has(key))unique.set(key,tag);});return [...unique.values()];}
+function clinicRelatedTagsFromAnswer(value){const block=String(value||'').match(/###\s*タグ\s*\n```(?:text)?\s*\n([\s\S]*?)```/i);return block?clinicRelatedTagsFromText(block[1]):[];}
+function clinicRelatedTagWeight(tag){return CLINIC_GENERIC_RELATED_TAGS.has(clinicNormalizeRelatedText(tag))?1:10;}
+function clinicIsClinicPostUrl(link){try{const url=new URL(link);return url.origin==='https://uemura-seitaiin.com'&&url.protocol==='https:';}catch(_){return false;}}
+function clinicRelatedPostMarkup(posts){return `<section class="clinic-related-posts" data-clinic-related-posts="true"><h2>あわせて読みたい記事</h2><ul>${posts.map(post=>`<li><a href="${esc(post.link)}">${esc(post.title)}</a></li>`).join('')}</ul></section>`;}
+async function clinicFindRelatedPosts(tags,currentTitle,request=fetch){
+  const normalizedCurrentTitle=clinicNormalizeRelatedText(currentTitle);
+  const tagResults=await Promise.all(tags.map(async tag=>{const response=await request(`${CLINIC_WP_API}/tags?per_page=100&search=${encodeURIComponent(tag)}`,{credentials:'omit'});if(!response.ok)return [];const records=await response.json();const generic=clinicRelatedTagWeight(tag)===1;return (Array.isArray(records)?records:[]).filter(record=>clinicNormalizeRelatedText(record.name)===clinicNormalizeRelatedText(tag)).map(record=>({id:record.id,weight:generic?1:10,generic}));}));
+  const tagWeights=new Map(tagResults.flat().map(tag=>[tag.id,tag]));
+  const hasSpecificTag=[...tagWeights.values()].some(tag=>!tag.generic);
+  if(!tagWeights.size)return [];
+  const response=await request(`${CLINIC_WP_API}/posts?per_page=100&_fields=id,link,status,title,tags,date`,{credentials:'omit'});
+  if(!response.ok)return [];
+  const posts=await response.json();
+  const seen=new Set();
+  return (Array.isArray(posts)?posts:[]).map(post=>{
+    const title=clinicPlainText(post.title?.rendered||'');
+    const matches=(Array.isArray(post.tags)?post.tags:[]).map(id=>tagWeights.get(id)).filter(Boolean);
+    const score=matches.reduce((sum,tag)=>sum+tag.weight,0);
+    const specificScore=matches.filter(tag=>!tag.generic).reduce((sum,tag)=>sum+tag.weight,0);
+    return {...post,title,score,specificScore};
+  }).filter(post=>post.status==='publish'&&post.score>0&&(!hasSpecificTag||post.specificScore>0)&&clinicIsClinicPostUrl(post.link)&&clinicNormalizeRelatedText(post.title)!==normalizedCurrentTitle&&!seen.has(post.link)&&seen.add(post.link)).sort((a,b)=>b.score-a.score||String(b.date||'').localeCompare(String(a.date||''))).slice(0,3);
+}
+async function clinicInsertRelatedPosts(){
+  const answer=clinicAnswer(2),message=clinicEl('clinic-answer-message-2');
+  if(!answer)return;
+  if(/data-clinic-related-posts\s*=\s*["']true["']/i.test(answer.value)){if(message)message.textContent='関連記事はすでに本文へ追加されています。';return;}
+  const tags=clinicRelatedTagsFromAnswer(answer.value);
+  if(!tags.length){if(message)message.textContent='関連記事用のタグをSTEP 2の回答から取得できないため、関連記事は追加しませんでした。';return;}
+  if(message)message.textContent='公開済み記事から関連記事を選定しています。';
+  try{
+    const posts=await clinicFindRelatedPosts(tags,clinicValue('clinic-title'));
+    if(!posts.length){if(message)message.textContent='一致する公開済み記事がないため、関連記事は追加しませんでした。';clinicSave();return;}
+    const markup=clinicRelatedPostMarkup(posts);
+    answer.value=/<\/article\s*>/i.test(answer.value)?answer.value.replace(/<\/article\s*>/i,`${markup}</article>`):`${answer.value}\n${markup}`;
+    clinicUpdate();clinicSave();
+    if(message)message.textContent=`関連記事${posts.length}件を本文末尾に追加しました。`;
+  }catch(_){if(message)message.textContent='関連記事を取得できなかったため、本文は変更していません。';}
+}
+
 // STEP3: 記事構造の解析、画像種別の判定、重複しない場面の選定を分離する。
 function clinicPlainText(html){return String(html||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ').trim();}
+function clinicExtractArticleHtml(value){const match=String(value||'').match(/<article\b[^>]*>[\s\S]*?<\/article\s*>/i);return match?match[0]:String(value||'');}
 // 本文の表示文字数だけを数える。HTML、style属性、URL、改行・インデントは含めない。
 function clinicArticleTextForCount(html){return String(html||'').replace(/<!--[\s\S]*?-->/g,'').replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'').replace(/<[^>]*>/g,' ').replace(/https?:\/\/[^\s<]+/gi,'').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([\da-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/\s+/g,'');}
 function clinicArticleLengthStatus(html){const count=Array.from(clinicArticleTextForCount(html)).length;if(count<3300)return {count,level:'short',message:'説明不足の可能性があります。原因と自律神経との関係を中心に、必要な医学的説明を補ってください。'};if(count>3700)return {count,level:'long',message:'文章整理の必要性があります。医学的な説明は維持し、重複表現や不要な言い回しを整理してください。'};return {count,level:'good',message:'適正です（3,300〜3,700字）。'};}
@@ -240,8 +284,8 @@ function migrateSavedClinicTitle(){
 function renderClinic(){
   clinicEl('clinicWorkflow').innerHTML=clinicSteps.map(([name,desc],i)=>{const n=i+1;let extra='';
     if(n===1)extra='<div class="answer-field"><label>元テーマ・病名<input id="clinic-theme" data-clinic-save placeholder="例：甲状腺機能低下症に伴う自律神経症状"></label><button type="button" class="clinic-theme-picker-button" id="openClinicThemePicker">元テーマ・病名一覧から選ぶ</button><section class="clinic-theme-picker" id="clinic-theme-picker" hidden aria-label="元テーマ・病名一覧"><div class="clinic-theme-picker-head"><strong>元テーマ・病名一覧</strong><button type="button" class="secondary clinic-theme-close" id="closeClinicThemePicker">一覧を閉じる</button></div><input id="clinic-theme-search" type="search" placeholder="病名・症状名を検索" aria-label="病名・症状名を検索"><div class="clinic-kana-filters" aria-label="五十音で絞り込み">'+['すべて','あ行','か行','さ行','た行','な行','は行','ま行','や行','ら行'].map(kana=>`<button type="button" data-clinic-kana="${kana}">${kana}</button>`).join('')+'</div><div class="clinic-theme-results" id="clinic-theme-results" aria-live="polite"></div></section></div>';
-    if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><button type="button" class="copy-button" data-clinic-copy="clinic-title" data-clinic-message="clinic-title-copy-message">コピー</button><p class="field-message" id="clinic-title-copy-message" aria-live="polite"></p><p class="hint">STEP1の回答はプロンプトに自動で反映されます。</p></div>';
-    const answerField=n===3?'<p class="hint">構成案とALTテキストを確認した後、必要に応じて別途その構成を使って画像を作成してください。</p>':`<div class="answer-field"><label>${n===2?'ChatGPTの記事本文HTMLを貼り付ける欄':'ChatGPTの回答を貼り付ける欄'}<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="${n===2?'ChatGPTから返ってきた記事本文HTMLだけをここに貼り付け':'ChatGPTの回答をここに貼り付け'}"></textarea></label>${n===2?'<p id="clinic-article-length" class="article-length" aria-live="polite"></p>':''}<button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
+    if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><button type="button" class="copy-button" data-clinic-copy="clinic-title" data-clinic-message="clinic-title-copy-message">コピー</button><p class="field-message" id="clinic-title-copy-message" aria-live="polite"></p><p class="hint">STEP2で生成される「タグ」を自動で関連記事の選定に使います。</p></div>';
+    const answerField=n===3?'<p class="hint">構成案とALTテキストを確認した後、必要に応じて別途その構成を使って画像を作成してください。</p>':`<div class="answer-field"><label>${n===2?'ChatGPTの記事一式（タグを含む）を貼り付ける欄':'ChatGPTの回答を貼り付ける欄'}<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="${n===2?'ChatGPTから返ってきた記事一式を、タグを含めて貼り付け':'ChatGPTの回答をここに貼り付け'}"></textarea></label>${n===2?'<p id="clinic-article-length" class="article-length" aria-live="polite"></p>':''}<button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
     const promptField=n===3?'<div id="clinic-image-prompts" aria-live="polite"></div>':`<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div>`;
     return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}${promptField}${answerField}</div></details>`;
   }).join('');
@@ -260,13 +304,14 @@ function clinicUpdate(){
     clinicPrompt(2).value+=`\n\n【フォーカスキーフレーズとAIOSEOの本文対策】\n・フォーカスキーフレーズは、本文を書く前に決定する。実際の検索意図、医学的な正確さ、一般の患者さんの理解しやすさ、記事内容との一致、自然な日本語を基準に、最も適したものを1つだけ選ぶ。本文・メタディスクリプション・AIOSEOタイトルは、その同じフレーズと最初から整合させる。\n・長い病名でも、文字数だけを理由に医学的な意味が変わる短縮をしない。12文字以内などの機械的な文字数制限は設けず、読みやすさと検索意図を優先する。\n・記事冒頭は「SEOタイトルのH2」「この記事でわかることのH2」「導入文」「目次」の順を維持する。「この記事でわかること」のH2直後に置く導入文の最初の<p>には、フォーカスキーフレーズを語順を変えずに自然に1回含める。単に先頭へ置くだけではなく、患者さんが症状や病気を理解しやすい自然な導入文にする。\n・病名や主要症状に直接関係するH2・H3には、フォーカスキーフレーズを自然に含める。特に「症状チェック」「原因と自律神経との関係」「病気の仕組み」「代表的な症状が起こる理由」「治療方法」に相当する見出しを優先する。長い病名の場合は、読みやすく自然に入る見出しだけに使う。\n・すべての見出しに入れる必要はない。同じような見出しの繰り返し、必要以上に長い見出し、医学的な意味の変更、検索キーワードの不自然な羅列は禁止する。\n・本文全体とまとめにも必要に応じて自然に使い、キーワード密度が不足しにくい構成にする。ただし、使用回数を機械的に固定せず、AIOSEOの推奨回数に無理に合わせない。不自然な繰り返しやキーワードの羅列は禁止し、必要に応じて関連語や自然な言い換えを使う。\n・AIOSEOスコアは改善の参考指標にとどめ、医学的正確性と患者さんの読みやすさを最優先する。医学的な病態を先に説明し、自律神経との関係は区別する。危険な症状と受診目安を省略せず、整体で病気そのものが治ると表現しない。\n・キーフレーズの追加で3,700字を超える場合は、医学的説明を削らずに重複表現を整理する。`;
     clinicPrompt(2).value+=`\n・記事本文の目標文字数は3,500字、許容範囲は3,300〜3,700字。HTMLタグ、style属性、URL、改行、インデントを除き、読者に表示される日本語テキストで数える。見出し・目次・チェックリストなど、表示される文字は数える。\n・出力前に表示文字数を確認する。3,300字未満なら、原因と自律神経との関係を中心に必要な医学的説明を補う。3,700字を超えるなら、医学的な説明は削らず、重複表現や不要な言い回しを整理する。範囲内になるまで再調整する。`;
   }
-  const lengthStatus=answer2?clinicArticleLengthStatus(answer2):null;
+  const articleHtml=clinicExtractArticleHtml(answer2);
+  const lengthStatus=answer2?clinicArticleLengthStatus(articleHtml):null;
   const lengthNotice=clinicEl('clinic-article-length');
   if(lengthNotice){lengthNotice.textContent=lengthStatus?`本文文字数（HTMLタグ・URL・改行を除く）：${lengthStatus.count.toLocaleString()}字。${lengthStatus.message}`:'';lengthNotice.className=`article-length ${lengthStatus?.level==='good'?'is-good':'is-warning'}`;}
   const step3Warning=!answer2?'STEP2の記事本文HTMLを貼り付けてください。':!title?'採用タイトルを入力してください。':'';
   clinicNotice(3,step3Warning);
   if(step3Warning){const imagePrompts=clinicEl('clinic-image-prompts');if(imagePrompts)imagePrompts.innerHTML='';}
-  else renderClinicImagePrompts(answer2,title||theme);
+  else renderClinicImagePrompts(articleHtml,title||theme);
   clinicStatus(1,!!clinicValue('clinic-step1-answer'));
   clinicStatus(2,!!answer2);
   clinicStatus(3,!step3Warning,step3Warning?'アイキャッチ構成・ALT用プロンプト未作成':'アイキャッチ構成・ALT用プロンプト作成済み');
@@ -275,14 +320,14 @@ function clinicSave(show=false){let previous={};try{previous=JSON.parse(localSto
 function clinicLoad(){try{const d=JSON.parse(localStorage.getItem(CLINIC_STORAGE_KEY)||'{}');if(clinicEl('clinic-theme'))clinicEl('clinic-theme').value=d.theme||'';if(clinicEl('clinic-title'))clinicEl('clinic-title').value=d.title||'';Object.entries(d.answers||{}).forEach(([n,v])=>{const answer=clinicAnswer(n);if(answer)answer.value=v||'';});}catch(_){}}
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
 function workLinkMarkup(links,type,label){const mobile=isIOS(),href=mobile?links[`${type}IOS`]:links[type],attributes=mobile?'':' target="_blank" rel="noopener noreferrer"';return `<a class="blog-quick-link" href="${href}"${attributes}>${label}</a>`;}
-function renderBlogQuickLinks(kind){const links=BLOG_LINKS[kind],container=clinicEl('blogQuickLinks');if(!links||!container)return;container.innerHTML=`<a class="blog-quick-link" href="${links.blog}" target="_blank" rel="noopener noreferrer">ブログを見る</a>${workLinkMarkup(links,'chatgpt','ChatGPT')}${workLinkMarkup(links,'wordpress','WordPress')}`;}
+function renderBlogQuickLinks(kind){const links=BLOG_LINKS[kind],container=clinicEl('blogQuickLinks');if(!links||!container)return;const hasMediaLink=kind==='clinic';const mediaLink=hasMediaLink?'<a class="blog-quick-link" href="https://uemura-seitaiin.com/wp-admin/media-new.php" target="_blank" rel="noopener noreferrer">メディアに追加</a>':'';container.classList.toggle('has-media-link',hasMediaLink);container.innerHTML=`<a class="blog-quick-link" href="${links.blog}" target="_blank" rel="noopener noreferrer">ブログを見る</a>${workLinkMarkup(links,'chatgpt','ChatGPT')}${workLinkMarkup(links,'wordpress','WordPress')}${mediaLink}`;}
 function showBlog(kind){const director=kind==='director';clinicEl('directorBlog').hidden=!director;clinicEl('clinicBlog').hidden=director;document.querySelectorAll('.blog-switch').forEach(b=>{const active=b.dataset.blog===kind;b.classList.toggle('is-active',active);b.setAttribute('aria-pressed',active);});renderBlogQuickLinks(kind);localStorage.setItem('totto-blog-assistant-active-blog',kind);}
 
 renderClinic();clinicLoad();migrateSavedClinicTitle();clinicUpdate();renderLastCreatedPost();
 document.querySelectorAll('.blog-switch').forEach(b=>b.addEventListener('click',()=>showBlog(b.dataset.blog)));
 showBlog(localStorage.getItem('totto-blog-assistant-active-blog')||'director');
 document.addEventListener('input',e=>{if(!e.target.matches('[data-clinic-save]'))return;clinicUpdate();clinicSave();});
-document.addEventListener('click',e=>{const copyId=e.target.dataset.clinicCopy;if(copyId)copy(copyId,e.target.dataset.clinicMessage);const n=e.target.dataset.clinicAnswerSave;if(n){if(n==='1'){const title=clinicPostTitleFromStep1(clinicValue('clinic-step1-answer'));if(title)clinicEl('clinic-title').value=title;clinicUpdate();}clinicSave();if(n==='2'&&clinicValue('clinic-step2-answer'))saveLastCreatedPost();clinicEl(`clinic-answer-message-${n}`).textContent='回答を保存しました。';}if(e.target.id==='clinicSaveNow')clinicSave(true);if(e.target.id==='clinicClearAll'&&confirm('うえむら整体院HPブログの保存内容をすべて消去しますか？')){localStorage.removeItem(CLINIC_STORAGE_KEY);location.reload();}});
+document.addEventListener('click',e=>{const copyId=e.target.dataset.clinicCopy;if(copyId)copy(copyId,e.target.dataset.clinicMessage);const n=e.target.dataset.clinicAnswerSave;if(n){if(n==='1'){const title=clinicPostTitleFromStep1(clinicValue('clinic-step1-answer'));if(title)clinicEl('clinic-title').value=title;clinicUpdate();}clinicSave();if(n==='2'&&clinicValue('clinic-step2-answer')){saveLastCreatedPost();clinicInsertRelatedPosts();}else clinicEl(`clinic-answer-message-${n}`).textContent='回答を保存しました。';}if(e.target.id==='clinicSaveNow')clinicSave(true);if(e.target.id==='clinicClearAll'&&confirm('うえむら整体院HPブログの保存内容をすべて消去しますか？')){localStorage.removeItem(CLINIC_STORAGE_KEY);location.reload();}});
 document.addEventListener('input',e=>{if(e.target.id==='clinic-theme-search')renderClinicThemeList();});
 document.addEventListener('click',e=>{
   if(e.target.id==='openClinicThemePicker')openClinicThemePicker();
