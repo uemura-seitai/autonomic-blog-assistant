@@ -37,6 +37,7 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .step-body { padding:0 14px 16px; border-top:1px solid var(--line); }
 .settings { margin-top:14px; border-top:1px solid var(--line); } .settings summary { padding:13px 0 2px; color:var(--green); cursor:pointer; font-size:.92rem; font-weight:700; } .settings-body { padding-bottom:2px; }
 .hint { margin:10px 0 0; color:var(--muted); font-size:.9rem; } .message, .field-message { min-height:1.4em; margin:8px 0 0; color:var(--green); font-size:.9rem; font-weight:700; }
+.selected-hp-post-notice { min-height:1.4em; margin:8px 0 0; color:var(--green); font-size:.88rem; font-weight:700; }
 .article-length { min-height:1.4em; margin:8px 0 0; font-size:.9rem; font-weight:700; } .article-length.is-good { color:#247259; } .article-length.is-warning { color:#9a5b34; }
 .step-warning { margin:10px 0 0; color:#9a5b34; font-size:.9rem; font-weight:700; } .step-warning:empty { display:none; }
 .prompt-field, .answer-field, .url-field { margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:10px; }
@@ -78,14 +79,53 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .title-history-picker { margin-top:12px; padding:12px; background:#f7fbf9; border:1px solid #b8d3cd; border-radius:10px; }
 .title-history-picker-head { display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--green); }
 .title-history-close { width:auto; min-height:40px; margin:0; padding:7px 10px; white-space:nowrap; font-size:.86rem; }
-#title-history-search { min-height:52px; margin-top:12px; }
+.title-history-summary, .title-history-status { min-height:1.4em; margin:10px 0 0; color:var(--green); font-size:.9rem; font-weight:700; }
+.title-history-status { color:var(--muted); font-weight:400; }
+.title-history-controls { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+.title-history-controls button, .title-history-refresh { width:auto; min-height:42px; margin:0; padding:7px 10px; color:#245f50; background:#edf6f2; border:1px solid #b8d3cd; font-size:.86rem; }
+.title-history-controls button.is-active { color:#fff; background:var(--green); border-color:var(--green); }
 .title-history-results { max-height:420px; margin-top:12px; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:8px; background:#fff; }
 .title-history-item { display:flex; align-items:stretch; border-bottom:1px solid var(--line); background:#fff; }
 .title-history-item:last-child { border-bottom:0; }
 .title-history-select { min-width:0; min-height:58px; margin:0; padding:11px 12px; color:var(--ink); background:#fff; border:0; border-radius:0; text-align:left; line-height:1.55; white-space:normal; overflow-wrap:anywhere; }
 .title-history-select span { display:block; margin-bottom:2px; color:var(--muted); font-size:.75rem; font-weight:700; }
 .title-history-delete { width:auto; min-width:56px; min-height:58px; margin:0; padding:8px; color:#99433f; background:#fff1ef; border:0; border-left:1px solid #efc6c0; border-radius:0; font-size:.82rem; }
+.health-post-item { display:block; padding:12px; }
+.health-post-details strong, .health-post-details span, .health-post-details a { display:block; }
+.health-post-details strong { color:var(--green); font-size:.88rem; }
+.health-post-details span { margin-top:2px; color:var(--muted); font-size:.84rem; }
+.health-post-details p { margin:5px 0; overflow-wrap:anywhere; font-weight:700; line-height:1.55; }
+.health-post-details a { width:max-content; max-width:100%; color:#245f50; font-size:.88rem; font-weight:700; overflow-wrap:anywhere; }
+.health-post-item .title-history-select { width:100%; min-height:44px; margin-top:10px; padding:8px 10px; color:#245f50; background:#dcefe9; border:1px solid #b8d3cd; border-radius:8px; text-align:center; font-size:.9rem; font-weight:700; }
+.health-post-item.is-posted { background:#f1faf4; border-left:4px solid #4d9270; }
+.health-post-status, .health-post-reason { margin:8px 0 0; font-size:.86rem; font-weight:700; }
+.health-post-status.is-posted { color:#247259; }
+.health-post-status.is-review { color:#9a5b34; }
+.health-post-status.is-unposted, .health-post-status.is-unavailable { color:var(--muted); }
+.health-post-reason { color:#9a5b34; font-weight:400; }
+.health-post-manual { margin-top:10px; padding:9px; border:1px solid var(--line); border-radius:8px; background:#fffdf7; }
+.health-post-manual summary { color:var(--green); cursor:pointer; font-size:.88rem; font-weight:700; }
+.health-post-manual label { margin-top:8px; font-size:.84rem; }
+.health-post-manual input { min-height:42px; padding:8px; }
+.health-post-manual button, .health-post-actions .secondary { min-height:42px; margin-top:8px; padding:8px 10px; font-size:.88rem; }
+.health-post-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.health-post-actions .title-history-select, .health-post-actions .secondary { flex:1 1 160px; }
+.health-post-item.is-hidden-health-post { opacity:.78; }
+.health-post-statistics, .health-post-review-warning, .health-post-recommendation-empty { margin:12px 0 0; font-size:.88rem; }
+.health-post-statistics { color:var(--green); font-weight:700; }
+.health-post-review-warning { padding:10px; color:#7b4e20; background:#fff7e7; border:1px solid #ead0a6; border-radius:8px; }
+.health-post-review-warning button { display:inline; width:auto; min-height:0; margin:0 0 0 6px; padding:0; color:#245f50; background:transparent; border:0; text-decoration:underline; font-size:inherit; }
+.health-post-recommendation-card { margin-top:12px; padding:12px; background:#fffdf7; border:1px solid #b8d3cd; border-radius:10px; }
+.health-post-recommendation-card h3, .health-post-recommendation-card strong, .health-post-recommendation-card span, .health-post-recommendation-card a { display:block; }
+.health-post-recommendation-card h3 { color:var(--green); }
+.health-post-recommendation-card p { margin:6px 0; font-weight:700; overflow-wrap:anywhere; }
+.health-post-recommendation-card span { margin-top:3px; color:var(--muted); font-size:.86rem; }
+.health-post-recommendation-card a { width:max-content; max-width:100%; margin-top:10px; color:#245f50; font-size:.88rem; font-weight:700; overflow-wrap:anywhere; }
+.health-post-recommendation-card button { margin-top:10px; }
+.health-post-candidate { margin-top:8px; padding:8px; background:#fffdf7; border:1px solid var(--line); border-radius:8px; }
+.health-post-candidate a { width:auto; }
+.health-post-candidate button { min-height:40px; margin-top:7px; padding:7px 9px; font-size:.84rem; }
 .url-target { margin:7px 0 0; color:var(--muted); font-size:.9rem; }
 footer { padding:0 18px 24px; text-align:center; font-size:.84rem; } footer a { color:var(--green); font-weight:700; }
 @media (min-width:769px) { .topbar { padding:18px 22px 6px; } .blog-switcher, .blog-quick-links { padding:0 22px; } main { padding:10px 22px 32px; } .card { padding:20px; } .step summary { padding-left:20px; } .step-body { padding:0 20px 20px; } }
-@media (max-width:768px) { .topbar { padding-left:12px; padding-right:12px; } .topbar h1 { font-size:1.3rem; } .blog-switcher, .blog-quick-links { gap:6px; padding:0 10px; } .blog-switch { min-width:0; padding:9px 6px; font-size:14px; } .blog-switch:first-child { flex:0 1 44%; } .blog-switch:last-child { flex:1 1 56%; white-space:nowrap; } .blog-quick-links.has-media-link { flex-wrap:wrap; } .blog-quick-links.has-media-link .blog-quick-link { flex-basis:calc(50% - 3px); } .blog-quick-link { min-height:42px; padding:8px 4px; font-size:13px; } main { padding:8px 10px 24px; } .card { padding:14px; margin:10px 0; } .step { margin-top:10px; } .step-body { padding:0 14px 14px; } .clinic-theme-picker, .title-history-picker { padding:10px; } .clinic-theme-picker-head, .title-history-picker-head { align-items:flex-start; } .clinic-theme-results, .title-history-results { max-height:55vh; } }
+@media (max-width:768px) { .topbar { padding-left:12px; padding-right:12px; } .topbar h1 { font-size:1.3rem; } .blog-switcher, .blog-quick-links { gap:6px; padding:0 10px; } .blog-switch { min-width:0; padding:9px 6px; font-size:14px; } .blog-switch:first-child { flex:0 1 44%; } .blog-switch:last-child { flex:1 1 56%; white-space:nowrap; } .blog-quick-links.has-media-link { flex-wrap:wrap; } .blog-quick-links.has-media-link .blog-quick-link { flex-basis:calc(50% - 3px); } .blog-quick-link { min-height:42px; padding:8px 4px; font-size:13px; } main { padding:8px 10px 24px; } .card { padding:14px; margin:10px 0; } .step { margin-top:10px; } .step-body { padding:0 14px 14px; } .clinic-theme-picker, .title-history-picker { padding:10px; } .clinic-theme-picker-head, .title-history-picker-head { align-items:flex-start; } .clinic-theme-results, .title-history-results { max-height:55vh; } .title-history-controls button { flex:1 1 calc(50% - 4px); } .title-history-controls .title-history-refresh { flex-basis:100%; } .health-post-actions { display:block; } .health-post-actions .title-history-select, .health-post-actions .secondary { width:100%; } }

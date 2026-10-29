@@ -30,10 +30,18 @@
     <section class="card setup">
       <h2>記事の基本情報</h2>
       <label>テーマ・悩み<input id="theme" data-save placeholder="例：寝る前に動悸がして眠れない" /></label>
+      <p class="selected-hp-post-notice" id="selectedHpPostNotice" aria-live="polite">HPブログ記事は未連携です。</p>
       <button type="button" class="title-history-picker-button" id="openTitleHistoryPicker">HPブログ投稿タイトルから選ぶ</button>
-      <section class="title-history-picker" id="title-history-picker" hidden aria-label="HPブログ投稿タイトル一覧">
-        <div class="title-history-picker-head"><strong>HPブログ投稿タイトル一覧</strong><button type="button" class="secondary title-history-close" id="closeTitleHistoryPicker">一覧を閉じる</button></div>
-        <input id="title-history-search" type="search" placeholder="投稿タイトルを検索" aria-label="投稿タイトルを検索">
+      <section class="title-history-picker" id="title-history-picker" hidden aria-label="HPブログ健康記事一覧">
+        <div class="title-history-picker-head"><strong>HPブログ健康記事一覧</strong><button type="button" class="secondary title-history-close" id="closeTitleHistoryPicker">一覧を閉じる</button></div>
+        <p class="title-history-summary" id="title-history-summary" aria-live="polite"></p>
+        <div class="title-history-controls" aria-label="記事一覧の操作">
+          <button type="button" class="secondary is-active" id="sortHealthPostsOldest" aria-pressed="true">古い順</button>
+          <button type="button" class="secondary" id="sortHealthPostsNewest" aria-pressed="false">新しい順</button>
+          <button type="button" class="title-history-refresh" id="refreshHealthPosts">最新情報に更新</button>
+        </div>
+        <p class="title-history-status" id="title-history-status" aria-live="polite"></p>
+        <section class="health-post-recommendation" id="healthPostRecommendation" aria-live="polite"></section>
         <div class="title-history-results" id="title-history-results" aria-live="polite"></div>
       </section>
       <details class="settings">
