@@ -35,13 +35,13 @@
       <section class="title-history-picker" id="title-history-picker" hidden aria-label="HPブログ健康記事一覧">
         <div class="title-history-picker-head"><strong>HPブログ健康記事一覧</strong><button type="button" class="secondary title-history-close" id="closeTitleHistoryPicker">一覧を閉じる</button></div>
         <p class="title-history-summary" id="title-history-summary" aria-live="polite"></p>
+        <label class="health-post-search-label">記事検索<input id="healthPostSearch" type="search" placeholder="HPブログ投稿タイトルを検索" aria-label="HPブログ投稿タイトルを検索"></label>
         <div class="title-history-controls" aria-label="記事一覧の操作">
-          <button type="button" class="secondary is-active" id="sortHealthPostsOldest" aria-pressed="true">古い順</button>
-          <button type="button" class="secondary" id="sortHealthPostsNewest" aria-pressed="false">新しい順</button>
+          <button type="button" class="secondary" id="sortHealthPostsOldest" aria-pressed="false">古い順</button>
+          <button type="button" class="secondary is-active" id="sortHealthPostsNewest" aria-pressed="true">新しい順</button>
           <button type="button" class="title-history-refresh" id="refreshHealthPosts">最新情報に更新</button>
         </div>
         <p class="title-history-status" id="title-history-status" aria-live="polite"></p>
-        <section class="health-post-recommendation" id="healthPostRecommendation" aria-live="polite"></section>
         <div class="title-history-results" id="title-history-results" aria-live="polite"></div>
       </section>
       <details class="settings">

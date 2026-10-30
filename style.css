@@ -84,6 +84,8 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .title-history-controls { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
 .title-history-controls button, .title-history-refresh { width:auto; min-height:42px; margin:0; padding:7px 10px; color:#245f50; background:#edf6f2; border:1px solid #b8d3cd; font-size:.86rem; }
 .title-history-controls button.is-active { color:#fff; background:var(--green); border-color:var(--green); }
+.health-post-search-label { margin-top:12px; color:var(--green); font-size:.88rem; }
+.health-post-search-label input { min-height:44px; }
 .title-history-results { max-height:420px; margin-top:12px; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:8px; background:#fff; }
 .title-history-item { display:flex; align-items:stretch; border-bottom:1px solid var(--line); background:#fff; }
 .title-history-item:last-child { border-bottom:0; }
