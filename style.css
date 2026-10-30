@@ -86,6 +86,20 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .title-history-controls button.is-active { color:#fff; background:var(--green); border-color:var(--green); }
 .health-post-search-label { margin-top:12px; color:var(--green); font-size:.88rem; }
 .health-post-search-label input { min-height:44px; }
+.new-themes summary { color:var(--green); cursor:pointer; font-weight:800; }
+.new-themes-panel { margin-top:12px; }
+.new-themes-count { color:var(--green); font-weight:700; }
+.new-theme-filters, .new-theme-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.new-theme-filters button, .new-theme-actions button { width:auto; min-height:38px; margin:0; padding:6px 9px; font-size:.82rem; }
+.new-theme-filters .is-active, .new-theme-actions .is-active { color:#fff; background:var(--green); }
+.new-theme-results { max-height:420px; margin-top:12px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; }
+.new-theme-item { padding:12px; border-bottom:1px solid var(--line); }
+.new-theme-item:last-child { border-bottom:0; }
+.new-theme-item strong, .new-theme-item span { display:block; }
+.new-theme-item strong { color:var(--green); font-size:.86rem; }
+.new-theme-item span { color:var(--muted); font-size:.82rem; }
+.new-theme-item p { margin:5px 0; font-weight:700; overflow-wrap:anywhere; }
+.new-theme-item button { min-height:40px; margin:7px 6px 0 0; padding:7px 9px; font-size:.84rem; }
 .title-history-results { max-height:420px; margin-top:12px; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:8px; background:#fff; }
 .title-history-item { display:flex; align-items:stretch; border-bottom:1px solid var(--line); background:#fff; }
 .title-history-item:last-child { border-bottom:0; }
