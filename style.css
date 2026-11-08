@@ -47,6 +47,7 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .image-work-card { margin-top:14px; padding:12px; border:1px solid #b8d3cd; border-radius:10px; background:#f7fbf9; }
 .image-work-card h3 { color:var(--green); }
 .image-work-card button + button { margin-top:8px; }
+.director-image-composition { min-height:240px; }
 .answer-field { background:#fffdf7; }
 .clinic-image-prompt-card { margin-top:14px; padding:12px; border:1px solid #b8d3cd; border-radius:10px; background:#f7fbf9; }
 .clinic-image-prompt-card h4 { margin:0; color:var(--green); font-size:1rem; line-height:1.5; }
