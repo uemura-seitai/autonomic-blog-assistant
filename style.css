@@ -43,6 +43,10 @@ button:active { transform:scale(.99); } button:focus-visible, summary:focus-visi
 .step-warning { margin:10px 0 0; color:#9a5b34; font-size:.9rem; font-weight:700; } .step-warning:empty { display:none; }
 .prompt-field, .answer-field, .url-field { margin-top:14px; padding:12px; border:1px solid var(--line); border-radius:10px; }
 .prompt-field label, .answer-field label, .url-field label { margin-top:0; }
+.url-field textarea { min-height:88px; resize:vertical; }
+.image-work-card { margin-top:14px; padding:12px; border:1px solid #b8d3cd; border-radius:10px; background:#f7fbf9; }
+.image-work-card h3 { color:var(--green); }
+.image-work-card button + button { margin-top:8px; }
 .answer-field { background:#fffdf7; }
 .clinic-image-prompt-card { margin-top:14px; padding:12px; border:1px solid #b8d3cd; border-radius:10px; background:#f7fbf9; }
 .clinic-image-prompt-card h4 { margin:0; color:var(--green); font-size:1rem; line-height:1.5; }
