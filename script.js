@@ -169,42 +169,67 @@ const CLINIC_GENERIC_RELATED_TAGS=new Set(['自律神経','ストレス','不安
 function clinicNormalizeRelatedText(value){return String(value||'').replace(/[\s　]/g,'').toLocaleLowerCase();}
 function clinicRelatedTagsFromText(value){const unique=new Map();String(value||'').replace(/<[^>]*>/g,' ').split(/[,，、\n]/).map(tag=>tag.trim()).filter(Boolean).forEach(tag=>{const key=clinicNormalizeRelatedText(tag);if(key&&!unique.has(key))unique.set(key,tag);});return [...unique.values()];}
 function clinicRelatedTagsFromAnswer(value){const block=String(value||'').match(/###\s*タグ\s*\n```(?:text)?\s*\n([\s\S]*?)```/i);return block?clinicRelatedTagsFromText(block[1]):[];}
-function clinicRelatedTagWeight(tag){return CLINIC_GENERIC_RELATED_TAGS.has(clinicNormalizeRelatedText(tag))?1:10;}
 function clinicIsClinicPostUrl(link){try{const url=new URL(link);return url.origin==='https://uemura-seitaiin.com'&&url.protocol==='https:';}catch(_){return false;}}
-function clinicRelatedPostMarkup(posts){return `<section class="clinic-related-posts" data-clinic-related-posts="true"><h2>あわせて読みたい記事</h2><ul>${posts.map(post=>`<li><a href="${esc(post.link)}">${esc(post.title)}</a></li>`).join('')}</ul></section>`;}
-async function clinicFindRelatedPosts(tags,currentTitle,request=fetch){
-  const normalizedCurrentTitle=clinicNormalizeRelatedText(currentTitle);
-  const tagResults=await Promise.all(tags.map(async tag=>{const response=await request(`${CLINIC_WP_API}/tags?per_page=100&search=${encodeURIComponent(tag)}`,{credentials:'omit'});if(!response.ok)return [];const records=await response.json();const generic=clinicRelatedTagWeight(tag)===1;return (Array.isArray(records)?records:[]).filter(record=>clinicNormalizeRelatedText(record.name)===clinicNormalizeRelatedText(tag)).map(record=>({id:record.id,weight:generic?1:10,generic}));}));
-  const tagWeights=new Map(tagResults.flat().map(tag=>[tag.id,tag]));
-  const hasSpecificTag=[...tagWeights.values()].some(tag=>!tag.generic);
-  if(!tagWeights.size)return [];
-  const response=await request(`${CLINIC_WP_API}/posts?per_page=100&_fields=id,link,status,title,tags,date`,{credentials:'omit'});
-  if(!response.ok)return [];
-  const posts=await response.json();
-  const seen=new Set();
-  return (Array.isArray(posts)?posts:[]).map(post=>{
-    const title=clinicPlainText(post.title?.rendered||'');
-    const matches=(Array.isArray(post.tags)?post.tags:[]).map(id=>tagWeights.get(id)).filter(Boolean);
-    const score=matches.reduce((sum,tag)=>sum+tag.weight,0);
-    const specificScore=matches.filter(tag=>!tag.generic).reduce((sum,tag)=>sum+tag.weight,0);
-    return {...post,title,score,specificScore};
-  }).filter(post=>post.status==='publish'&&post.score>0&&(!hasSpecificTag||post.specificScore>0)&&clinicIsClinicPostUrl(post.link)&&clinicNormalizeRelatedText(post.title)!==normalizedCurrentTitle&&!seen.has(post.link)&&seen.add(post.link)).sort((a,b)=>b.score-a.score||String(b.date||'').localeCompare(String(a.date||''))).slice(0,3);
+const CLINIC_INTERNAL_LINK_START='<!-- uemura-internal-links:start -->';
+const CLINIC_INTERNAL_LINK_END='<!-- uemura-internal-links:end -->';
+function clinicInternalLinkMarkup(posts){const links=posts.map(post=>`<a href="${esc(post.link)}">${esc(post.title)}</a>`);const list=links.length===1?links[0]:links.length===2?`${links[0]}と${links[1]}`:`${links.slice(0,-1).join('、')}、${links.at(-1)}`;return `${CLINIC_INTERNAL_LINK_START}\n<p>症状や背景を理解するために、${list}についてもあわせて確認しておくと役立ちます。</p>\n${CLINIC_INTERNAL_LINK_END}`;}
+function clinicRemoveGeneratedInternalLinks(html){return String(html||'').replace(/<!-- uemura-internal-links:start -->[\s\S]*?<!-- uemura-internal-links:end -->\s*/gi,'').replace(/<section\b[^>]*\bdata-clinic-related-posts\s*=\s*(["'])true\1[^>]*>[\s\S]*?<\/section>\s*/gi,'');}
+const CLINIC_GENERIC_RELATED_TERMS=new Set([...CLINIC_GENERIC_RELATED_TAGS,'原因','症状','治療','対策','改善','病気','体調','痛み','生活','関係','受診','セルフケア']);
+const CLINIC_MEDICAL_TERM_PATTERNS=[/慢性腰痛|急性腰痛|寝起きの腰痛|朝の腰痛|腰痛|坐骨神経痛|椎間板ヘルニア|脊柱管狭窄症|腰椎[^、。\s]{0,8}(?:症|疾患|ヘルニア|狭窄症)|肩こり|五十肩|頸椎[^、。\s]{0,8}(?:症|疾患|ヘルニア)|頭痛|片頭痛|緊張型頭痛|めまい|耳鳴り|不眠(?:症)?|睡眠時無呼吸(?:症)?|過敏性腸症候群|胃食道逆流症|GERD|食道けいれん|呑気症|ストレス性胃炎|逆流性食道炎|高血圧|ストレス性高血圧|更年期(?:障害)?|甲状腺[^、。\s]{0,8}(?:症|疾患)|起立性調節障害|パニック障害|うつ病|自律神経失調症|しびれ|動悸|便秘|下痢|腹痛|関節痛|筋肉痛/g];
+const CLINIC_MEDICALLY_RELATED_TERMS=[{source:['胃食道逆流症','GERD'],related:['食道けいれん','呑気症']}];
+function clinicRelatedText(value){return clinicPlainText(String(value||'')).replace(/[\s　]/g,'');}
+function clinicHeadingTexts(html){return [...String(html||'').matchAll(/<h[123]\b[^>]*>([\s\S]*?)<\/h[123]>/gi)].map(match=>clinicPlainText(match[1])).filter(Boolean);}
+function clinicTitleFromArticle(html){const heading=clinicHeadingTexts(html)[0]||'';return heading.replace(/^SEOタイトル[：:]/,'').trim();}
+function clinicTopicTerms(articleHtml,currentTitle,taxonomies=[]){
+  const article=clinicExtractArticleHtml(articleHtml),headings=clinicHeadingTexts(article),body=clinicRelatedText(article);
+  const lead=[...String(article).matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].slice(0,2).map(match=>clinicPlainText(match[1])).join(' ');
+  const source=clinicRelatedText([currentTitle,clinicTitleFromArticle(article),headings.join(' '),lead,body].join(' '));
+  const terms=new Set();
+  CLINIC_MEDICAL_TERM_PATTERNS.forEach(pattern=>{for(const match of source.matchAll(pattern))terms.add(match[0]);});
+  taxonomies.forEach(term=>{const normalized=clinicRelatedText(term);if(normalized.length>=3&&!CLINIC_GENERIC_RELATED_TERMS.has(normalized)&&source.includes(normalized))terms.add(normalized);});
+  // 「朝に腰が痛い」のような自然文も、公開記事で使われる代表的な症状名へ寄せる。
+  if(/腰.{0,8}痛|痛.{0,8}腰/.test(source))terms.add('腰痛');
+  if(/首|頸/.test(source)&&/痛|こり/.test(source))terms.add('首こり');
+  if(/肩/.test(source)&&/痛|こり/.test(source))terms.add('肩こり');
+  return [...terms].filter(term=>term.length>=2&&!CLINIC_GENERIC_RELATED_TERMS.has(term));
+}
+function clinicPrimaryTopicTerms(articleHtml,currentTitle,taxonomies=[]){const title=currentTitle||clinicTitleFromArticle(articleHtml);return clinicTopicTerms(title,title,taxonomies);}
+function clinicExpandRelatedTerms(terms){const expanded=new Set(terms);CLINIC_MEDICALLY_RELATED_TERMS.forEach(group=>{if(group.source.some(term=>terms.includes(term)))group.related.forEach(term=>expanded.add(term));});return [...expanded];}
+function clinicIsSpecificMedicalTerm(term){return CLINIC_MEDICAL_TERM_PATTERNS.some(pattern=>new RegExp(pattern.source,pattern.flags.replace('g','')).test(term));}
+function clinicTaxonomyNames(post,tags,categories){return [...(post.tags||[]).map(id=>tags.get(id)||''),...(post.categories||[]).map(id=>categories.get(id)||'')].filter(Boolean);}
+async function clinicFindRelatedPosts(articleHtml,currentTitle,request=fetch){
+  const [tags,categories,posts]=await Promise.all([
+    fetchAllWpRecords(`${CLINIC_WP_API}/tags?context=view`,request),
+    fetchAllWpRecords(`${CLINIC_WP_API}/categories?context=view`,request),
+    fetchAllWpRecords(`${CLINIC_WP_API}/posts?status=publish&_fields=id,link,status,title,content,excerpt,tags,categories,date`,request)
+  ]);
+  const tagNames=new Map(tags.map(tag=>[tag.id,clinicPlainText(tag.name)])),categoryNames=new Map(categories.map(category=>[category.id,clinicPlainText(category.name)]));
+  const taxonomyNames=[...tagNames.values(),...categoryNames.values()];
+  const terms=clinicExpandRelatedTerms(clinicTopicTerms(articleHtml,currentTitle,[...taxonomyNames,...clinicRelatedTagsFromAnswer(articleHtml)]));
+  if(!terms.length)return [];
+  const primaryTerms=clinicPrimaryTopicTerms(articleHtml,currentTitle,taxonomyNames);
+  const rules=healthCategoryRules(categories),normalizedCurrentTitle=clinicNormalizeRelatedText(currentTitle||clinicTitleFromArticle(articleHtml)),seen=new Set();
+  return posts.map(post=>{
+    const title=clinicPlainText(post.title?.rendered||''),titleText=clinicRelatedText(title),contentText=clinicRelatedText(`${post.content?.rendered||''} ${post.excerpt?.rendered||''}`),taxonomyText=clinicRelatedText(clinicTaxonomyNames(post,tagNames,categoryNames).join(' '));
+    let score=0,matched=0,primaryMatch=false,specificTitleMatch=false;
+    terms.forEach(term=>{const inTitle=titleText.includes(term),inContent=contentText.includes(term),inTaxonomy=taxonomyText.includes(term),primary=primaryTerms.includes(term);if(inTitle||inContent||inTaxonomy){matched+=1;if(primary&&(inTitle||inTaxonomy))primaryMatch=true;if(inTitle&&clinicIsSpecificMedicalTerm(term))specificTitleMatch=true;score+=(inTitle?(primary?60:16):0)+(inTaxonomy?(primary?40:6):0)+(inContent?(primary?12:2):0);}});
+    return {...post,title,score,matched,primaryMatch,specificTitleMatch};
+  }).filter(post=>post.status==='publish'&&classifyHealthPost(post,rules)==='health'&&post.specificTitleMatch&&post.score>=10&&clinicIsClinicPostUrl(post.link)&&clinicNormalizeRelatedText(post.title)!==normalizedCurrentTitle&&!seen.has(post.link)&&seen.add(post.link)).sort((a,b)=>b.score-a.score||b.matched-a.matched||String(b.date||'').localeCompare(String(a.date||''))).slice(0,3);
 }
 async function clinicInsertRelatedPosts(){
   const answer=clinicAnswer(2),message=clinicEl('clinic-answer-message-2');
   if(!answer)return;
-  if(/data-clinic-related-posts\s*=\s*["']true["']/i.test(answer.value)){if(message)message.textContent='関連記事はすでに本文へ追加されています。';return;}
-  const tags=clinicRelatedTagsFromAnswer(answer.value);
-  if(!tags.length){if(message)message.textContent='関連記事用のタグをSTEP 2の回答から取得できないため、関連記事は追加しませんでした。';return;}
-  if(message)message.textContent='公開済み記事から関連記事を選定しています。';
+  if(new RegExp(CLINIC_INTERNAL_LINK_START.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(answer.value)){if(message)message.textContent='本文内リンクはすでに追加されています。再保存しても重複しません。';return;}
+  if(message)message.textContent='公開済み記事から本文内リンクの候補を選定しています。';
   try{
-    const posts=await clinicFindRelatedPosts(tags,clinicValue('clinic-title'));
-    if(!posts.length){if(message)message.textContent='一致する公開済み記事がないため、関連記事は追加しませんでした。';clinicSave();return;}
-    const markup=clinicRelatedPostMarkup(posts);
-    answer.value=/<\/article\s*>/i.test(answer.value)?answer.value.replace(/<\/article\s*>/i,`${markup}</article>`):`${answer.value}\n${markup}`;
+    const posts=await clinicFindRelatedPosts(answer.value,clinicValue('clinic-title'));
+    const cleaned=clinicRemoveGeneratedInternalLinks(answer.value);
+    if(!posts.length){answer.value=cleaned;if(message)message.textContent='関連する公開済み記事が見つからなかったため、本文内リンクは追加しませんでした。';clinicUpdate();clinicSave();return;}
+    const markup=clinicInternalLinkMarkup(posts);
+    answer.value=/<\/article\s*>/i.test(cleaned)?cleaned.replace(/<\/article\s*>/i,`${markup}\n</article>`):`${cleaned}\n${markup}`;
     clinicUpdate();clinicSave();
-    if(message)message.textContent=`関連記事${posts.length}件を本文末尾に追加しました。`;
-  }catch(_){if(message)message.textContent='関連記事を取得できなかったため、本文は変更していません。';}
+    if(message)message.textContent=`公開済みの関連HPブログ${posts.length}件への本文内リンクを追加しました。`;
+  }catch(_){if(message)message.textContent='公開済み記事を取得できなかったため、本文は変更していません。';}
 }
 
 // STEP3: 記事構造の解析、画像種別の判定、重複しない場面の選定を分離する。
@@ -368,8 +393,8 @@ function migrateSavedClinicTitle(){
 function renderClinic(){
   clinicEl('clinicWorkflow').innerHTML=clinicSteps.map(([name,desc],i)=>{const n=i+1;let extra='';
     if(n===1)extra='<div class="answer-field"><label>元テーマ・病名<input id="clinic-theme" data-clinic-save placeholder="例：甲状腺機能低下症に伴う自律神経症状"></label><button type="button" class="clinic-theme-picker-button" id="openClinicThemePicker">元テーマ・病名一覧から選ぶ</button><section class="clinic-theme-picker" id="clinic-theme-picker" hidden aria-label="元テーマ・病名一覧"><div class="clinic-theme-picker-head"><strong>元テーマ・病名一覧</strong><button type="button" class="secondary clinic-theme-close" id="closeClinicThemePicker">一覧を閉じる</button></div><input id="clinic-theme-search" type="search" placeholder="病名・症状名を検索" aria-label="病名・症状名を検索"><div class="clinic-kana-filters" aria-label="五十音で絞り込み">'+['すべて','あ行','か行','さ行','た行','な行','は行','ま行','や行','ら行'].map(kana=>`<button type="button" data-clinic-kana="${kana}">${kana}</button>`).join('')+'</div><div class="clinic-theme-results" id="clinic-theme-results" aria-live="polite"></div></section></div>';
-    if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><button type="button" class="copy-button" data-clinic-copy="clinic-title" data-clinic-message="clinic-title-copy-message">コピー</button><p class="field-message" id="clinic-title-copy-message" aria-live="polite"></p><p class="hint">STEP2で生成される「タグ」を自動で関連記事の選定に使います。</p></div>';
-    const answerField=n===3?'<p class="hint">構成案とALTテキストを確認した後、必要に応じて別途その構成を使って画像を作成してください。</p>':`<div class="answer-field"><label>${n===2?'ChatGPTの記事一式（タグを含む）を貼り付ける欄':'ChatGPTの回答を貼り付ける欄'}<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="${n===2?'ChatGPTから返ってきた記事一式を、タグを含めて貼り付け':'ChatGPTの回答をここに貼り付け'}"></textarea></label>${n===2?'<p id="clinic-article-length" class="article-length" aria-live="polite"></p>':''}<button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
+    if(n===2)extra='<div class="answer-field"><label>最終的に採用した投稿タイトル<input id="clinic-title" data-clinic-save placeholder="STEP1から選んだタイトルを入力"></label><button type="button" class="copy-button" data-clinic-copy="clinic-title" data-clinic-message="clinic-title-copy-message">コピー</button><p class="field-message" id="clinic-title-copy-message" aria-live="polite"></p><p class="hint">投稿タイトルと記事本文HTMLから関連記事を自動判定します。タグが含まれる場合は補助情報として使います。</p></div>';
+    const answerField=n===3?'<p class="hint">構成案とALTテキストを確認した後、必要に応じて別途その構成を使って画像を作成してください。</p>':`<div class="answer-field"><label>${n===2?'記事本文HTMLを貼り付ける欄':'ChatGPTの回答を貼り付ける欄'}<textarea class="answer-textarea" id="clinic-step${n}-answer" data-clinic-save placeholder="${n===2?'記事本文HTMLを貼り付け（タグの貼り付けは不要）':'ChatGPTの回答をここに貼り付け'}"></textarea></label>${n===2?'<p class="hint">記事本文HTMLから関連記事を自動判定します。タグの貼り付けは不要です。</p><p id="clinic-article-length" class="article-length" aria-live="polite"></p>':''}<button type="button" class="secondary clinic-answer-save" data-clinic-answer-save="${n}">回答を保存</button><p class="field-message" id="clinic-answer-message-${n}" aria-live="polite"></p></div>`;
     const promptField=n===3?'<div id="clinic-image-prompts" aria-live="polite"></div>':`<div class="prompt-field"><label>ChatGPTに貼り付けるプロンプト<textarea class="prompt-textarea" id="clinic-step${n}-prompt" readonly></textarea></label><button type="button" class="copy-button" data-clinic-copy="clinic-step${n}-prompt" data-clinic-message="clinic-copy-${n}">プロンプトをコピー</button><p class="field-message" id="clinic-copy-${n}" aria-live="polite"></p></div>`;
     return `<details class="step" ${n===1?'open':''}><summary><span class="step-number">STEP ${n}</span><strong class="step-title">${name}</strong><span class="step-status" id="clinic-status-${n}">状態：未作成</span></summary><div class="step-body"><p class="hint">${desc}</p><p id="clinic-warning-${n}" class="step-warning" aria-live="polite"></p>${extra}${promptField}${answerField}</div></details>`;
   }).join('');

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'autonomic-blog-assistant-v5';
-const APP_FILES = ['./', './index.html', './style.css', './script.js', './manifest.json', './icon.svg'];
+const CACHE_NAME = 'autonomic-blog-assistant-v7';
+const APP_FILES = ['./', './index.html', './style.css', './script.js?v=20261112-internal-links', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
