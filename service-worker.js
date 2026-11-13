@@ -1,5 +1,5 @@
 const CACHE_NAME = 'autonomic-blog-assistant-v8';
-const APP_FILES = ['./', './index.html', './style.css', './script.js?v=20261113-clinic-media-chrome', './manifest.json', './icon.svg'];
+const APP_FILES = ['./', './index.html', './style.css', './script.js?v=20261113-director-blog-chrome', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
